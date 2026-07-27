@@ -338,7 +338,7 @@ with st.sidebar:
     MODEL_NAME = st.selectbox(
         "🧠 Pilih Model AI:",
         ["openai/gpt-oss-120b", "nvidia/nemotron-3-ultra-550b-a55b", "google/diffusiongemma-26b-a4b-it", "deepseek-ai/deepseek-v4-flash"],
-        index=3
+        index=1
     )
 
     if st.button("🚪 Keluar (Logout)", use_container_width=True):
@@ -444,7 +444,13 @@ with col_chat:
 
         with chat_container:
             with st.chat_message("assistant"):
-                client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
+                # --- [PERBAIKAN KONEKSI API DENGAN TIMEOUT DAN RETRIES] ---
+                client = OpenAI(
+                    base_url=BASE_URL, 
+                    api_key=API_KEY,
+                    timeout=120.0,
+                    max_retries=3
+                )
                 placeholder = st.empty()
                 full_response = ""
 
