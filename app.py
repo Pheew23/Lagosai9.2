@@ -356,11 +356,11 @@ with st.sidebar:
         ''', unsafe_allow_html=True
     )
 
-# --- LAYOUT DINAMIS (MOBILE FRIENDLY) ---
+# --- LAYOUT DINAMIS (KEMBALI KE EMERGENT LAYOUT - KOLOM) ---
 if st.session_state.generated_code:
-    col_chat, col_preview = st.tabs(["💬 Area Obrolan", "⚡ Render Workspace"])
+    col_chat, col_preview = st.columns([1, 1], gap="large")
 else:
-    col_chat = st.container()
+    _, col_chat, _ = st.columns([1, 4, 1])
     col_preview = None
 
 # --- AREA OBROLAN ---
