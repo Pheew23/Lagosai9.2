@@ -32,7 +32,7 @@ st.set_page_config(
 # --- 2. CUSTOM CSS ---
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
+        @import url('[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap)');
         html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
@@ -132,107 +132,105 @@ ATURAN KODE:
 [masukkan potongan kode lama persis seperti aslinya]
 <<REPLACE>>
 [masukkan potongan kode baru sebagai pengganti]
+```
+
 ATURAN WAJIB HTML (SANDBOX SAFE):
-
-DILARANG menggunakan link dummy navigasi seperti <a href="#"> atau <a href="/">. Gunakan <a href="javascript:void(0);">.
-
-Cegah refresh pada form dengan <form onsubmit="event.preventDefault()">.
-
-DILARANG menggunakan tag <meta http-equiv="refresh"> atau manipulasi window.location.
+- DILARANG menggunakan link dummy navigasi seperti `<a href="#">` atau `<a href="/">`. Gunakan `<a href="javascript:void(0);">`.
+- Cegah refresh pada form dengan `<form onsubmit="event.preventDefault()">`.
+- DILARANG menggunakan tag `<meta http-equiv="refresh">` atau manipulasi `window.location`.
 """
 
 def load_session_messages(session_id):
-conn = sqlite3.connect(DB_NAME)
-c = conn.cursor()
-c.execute("SELECT role, content FROM messages WHERE session_id=? ORDER BY id ASC", (session_id,))
-rows = c.fetchall()
-conn.close()
-msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
-for r, c in rows:
-try: msgs.append({"role": r, "content": json.loads(c)})
-except: msgs.append({"role": r, "content": c})
-return msgs
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("SELECT role, content FROM messages WHERE session_id=? ORDER BY id ASC", (session_id,))
+    rows = c.fetchall()
+    conn.close()
+    msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for r, c in rows:
+        try: msgs.append({"role": r, "content": json.loads(c)})
+        except: msgs.append({"role": r, "content": c})
+    return msgs
 
 def save_session_db(session_id, username, title, messages):
-conn = sqlite3.connect(DB_NAME)
-c = conn.cursor()
-c.execute("INSERT OR REPLACE INTO sessions (session_id, username, title, updated_at) VALUES (?, ?, ?, ?)",
-(session_id, username, title, datetime.datetime.now()))
-c.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
-for msg in messages:
-if msg["role"] != "system":
-c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)",
-(session_id, msg["role"], json.dumps(msg["content"])))
-conn.commit()
-conn.close()
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO sessions (session_id, username, title, updated_at) VALUES (?, ?, ?, ?)", 
+              (session_id, username, title, datetime.datetime.now()))
+    c.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
+    for msg in messages:
+        if msg["role"] != "system":
+            c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)", 
+                      (session_id, msg["role"], json.dumps(msg["content"])))
+    conn.commit()
+    conn.close()
 
 def delete_session_db(session_id):
-conn = sqlite3.connect(DB_NAME)
-c = conn.cursor()
-c.execute("DELETE FROM sessions WHERE session_id=?", (session_id,))
-c.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
-conn.commit()
-conn.close()
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("DELETE FROM sessions WHERE session_id=?", (session_id,))
+    c.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
+    conn.commit()
+    conn.close()
 
 init_db()
 
---- 3. SISTEM AUTENTIKASI ---
+# --- 3. SISTEM AUTENTIKASI ---
 if "logged_in" not in st.session_state:
-st.session_state.logged_in = False
-st.session_state.username = ""
+    st.session_state.logged_in = False
+    st.session_state.username = ""
 
 cookie_logged_in = cookie_manager.get("is_logged_in")
 cookie_username = cookie_manager.get("saved_username")
 
 if st.session_state.get("del_cookie") == True:
-cookie_manager.delete("is_logged_in", key="del_login_cookie")
-cookie_manager.delete("saved_username", key="del_user_cookie")
-st.session_state.del_cookie = False
-cookie_logged_in = None
-cookie_username = None
+    cookie_manager.delete("is_logged_in", key="del_login_cookie")
+    cookie_manager.delete("saved_username", key="del_user_cookie")
+    st.session_state.del_cookie = False 
+    cookie_logged_in = None 
+    cookie_username = None
 
 if cookie_logged_in == "True" and not st.session_state.logged_in:
-st.session_state.logged_in = True
-st.session_state.username = cookie_username
+    st.session_state.logged_in = True
+    st.session_state.username = cookie_username
 
 if st.session_state.get("set_cookie") == True:
-expire_date = datetime.datetime.now() + datetime.timedelta(days=7)
-cookie_manager.set("is_logged_in", "True", expires_at=expire_date, key="set_login_cookie")
-cookie_manager.set("saved_username", st.session_state.username, expires_at=expire_date, key="set_user_cookie")
-st.session_state.set_cookie = False
+    expire_date = datetime.datetime.now() + datetime.timedelta(days=7)
+    cookie_manager.set("is_logged_in", "True", expires_at=expire_date, key="set_login_cookie")
+    cookie_manager.set("saved_username", st.session_state.username, expires_at=expire_date, key="set_user_cookie")
+    st.session_state.set_cookie = False
 
 if not st.session_state.logged_in:
-st.markdown('🔮 Lagos AI 9.1', unsafe_allow_html=True)
-st.markdown('Silakan Masuk untuk Mengakses Asisten', unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1, 1.5, 1])
-with col2:
-with st.container(border=True):
-tab_login, tab_register = st.tabs(["🔑 Masuk", "📝 Daftar Baru"])
-with tab_login:
-st.markdown("Selamat Datang Kembali", unsafe_allow_html=True)
-log_user = st.text_input("Username", key="log_user")
-log_pass = st.text_input("Password", type="password", key="log_pass")
-if st.button("Masuk", use_container_width=True, type="primary"):
-if authenticate_user(log_user, log_pass):
-st.session_state.logged_in = True
-st.session_state.username = log_user
-st.session_state.set_cookie = True
-st.rerun()
-else: st.error("Username atau password salah!")
-with tab_register:
-st.markdown("Buat Akun Baru", unsafe_allow_html=True)
-reg_user = st.text_input("Username Baru", key="reg_user")
-reg_pass = st.text_input("Password Baru", type="password", key="reg_pass")
-if st.button("Daftar & Buat Akun", use_container_width=True):
-if reg_user and reg_pass:
-if register_user(reg_user, reg_pass): st.success("✅ Berhasil mendaftar!")
-else: st.error("❌ Username sudah dipakai.")
-st.stop()
-### BAGIAN 2 (Copy dan paste tepat di baris bawah setelah Bagian 1)
-```python
+    st.markdown('<div class="header-title">🔮 Lagos AI 9.1</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-subtitle">Silakan Masuk untuk Mengakses Asisten</div>', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1.5, 1])
+    with col2:
+        with st.container(border=True):
+            tab_login, tab_register = st.tabs(["🔑 Masuk", "📝 Daftar Baru"])
+            with tab_login:
+                st.markdown("<h4 style='text-align: center; margin-bottom: 20px;'>Selamat Datang Kembali</h4>", unsafe_allow_html=True)
+                log_user = st.text_input("Username", key="log_user")
+                log_pass = st.text_input("Password", type="password", key="log_pass")
+                if st.button("Masuk", use_container_width=True, type="primary"):
+                    if authenticate_user(log_user, log_pass):
+                        st.session_state.logged_in = True
+                        st.session_state.username = log_user
+                        st.session_state.set_cookie = True
+                        st.rerun()
+                    else: st.error("Username atau password salah!")
+            with tab_register:
+                st.markdown("<h4 style='text-align: center; margin-bottom: 20px;'>Buat Akun Baru</h4>", unsafe_allow_html=True)
+                reg_user = st.text_input("Username Baru", key="reg_user")
+                reg_pass = st.text_input("Password Baru", type="password", key="reg_pass")
+                if st.button("Daftar & Buat Akun", use_container_width=True):
+                    if reg_user and reg_pass:
+                        if register_user(reg_user, reg_pass): st.success("✅ Berhasil mendaftar!")
+                        else: st.error("❌ Username sudah dipakai.")
+    st.stop()
+
 # --- KODE SETELAH LOGIN ---
 API_KEY = st.secrets.get("NVIDIA_API_KEY", "") 
-BASE_URL = "https://integrate.api.nvidia.com/v1"
+BASE_URL = "[https://integrate.api.nvidia.com/v1](https://integrate.api.nvidia.com/v1)"
 
 @st.cache_data(show_spinner=False)
 def konversi_gambar_ke_base64(uploaded_file):
