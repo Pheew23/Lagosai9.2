@@ -8,4 +8,4 @@ SpeechRecognition
 requests
 extra-streamlit-components
 beautifulsoup4
-pandas numpy plotly
+pandas-numpy-plotly
