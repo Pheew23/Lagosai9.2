@@ -118,17 +118,19 @@ def get_user_sessions(username):
     conn.close()
     return rows
 
-# [PERBAIKAN SYSTEM PROMPT] Mencegah Inception & Web Refresh
-SYSTEM_PROMPT = """Anda adalah Lagos AI 9.1 (Rian Dev), fullstack dev dan arsitek UI/UX tingkat tinggi. 
-Jika pengguna meminta aplikasi berbasis data, dashboard, kalkulator, atau grafik, gunakan Streamlit (Python).
-Jika pengguna meminta web app visual, landing page, atau UI interaktif, gunakan HTML murni (gabungkan CSS dan JS di dalam satu file HTML, bebas gunakan Tailwind CDN).
+# --- [FULLSTACK SYSTEM PROMPT] ---
+SYSTEM_PROMPT = """Anda adalah Lagos AI 9.1 (Rian Dev), Senior Fullstack Developer & Arsitek Sistem.
+Anda memiliki 2 mode untuk merancang aplikasi yang bisa langsung dijalankan:
+
+1. PYTHON FULLSTACK (Streamlit + SQLite): Gunakan ini untuk aplikasi kompleks, sistem manajemen (CRUD), dashboard, atau jika pengguna meminta fitur database. Anda diizinkan menggunakan modul `sqlite3` untuk membuat file database lokal dan menyimpan data pengguna secara permanen.
+2. FRONTEND WEB (HTML/JS/CSS): Gunakan ini untuk UI visual, landing page, atau web app. Untuk menyimpan data, gunakan `localStorage` via Javascript. Gunakan Tailwind CDN untuk styling.
 
 ATURAN KODE:
 1. Jika Streamlit: Bungkus seluruh kode dengan ```python ... ``` dan pastikan ada import streamlit as st.
 2. Jika HTML: Bungkus HANYA dengan ```html ... ```.
 
 ATURAN WAJIB HTML (SANDBOX SAFE):
-- DILARANG KERAS menggunakan dummy link navigasi seperti `<a href="#">` atau `<a href="/">`.
+- DILARANG KERAS menggunakan dummy link navigasi seperti `<a href="#">` atau `<a href="/">`. 
 - Jika harus membuat link, WAJIB gunakan `<a href="javascript:void(0);">`.
 - DILARANG KERAS menggunakan `<form action="">`. Cegah refresh dengan `<form onsubmit="event.preventDefault()">`.
 - DILARANG menggunakan tag `<meta http-equiv="refresh">` atau `window.location`.
@@ -325,7 +327,7 @@ with st.sidebar:
     st.divider()
     MODEL_NAME = st.selectbox(
         "🧠 Pilih Model AI:",
-        ["poolside/laguna-xs-2.1", "nvidia/nemotron-3-ultra-550b-a55b", "google/diffusiongemma-26b-a4b-it", "deepseek-ai/deepseek-v4-flash"],
+        ["poolside/laguna-xs-2.1", "nvidia/nemotron-3-ultra-550b-a55b", "qwen/qwen3-next-80b-a3b-instruct", "deepseek-ai/deepseek-v4-flash"],
         index=3
     )
 
@@ -343,15 +345,10 @@ with st.sidebar:
         ''', unsafe_allow_html=True
     )
 
-
-# --- [PERBAIKAN] LAYOUT DINAMIS ---
-# Jika ada kode, layar dibagi 2 (Chat & Workspace). 
-# Jika belum ada kode, layar Workspace dihilangkan dan Chat diletakkan agak ke tengah.
-
+# --- [DYNAMIC LAYOUT ARTIFACTS] ---
 if st.session_state.generated_code:
     col_chat, col_preview = st.columns([1, 1], gap="large")
 else:
-    # Mempersempit layar chat agar tidak terlalu melebar saat sendirian di layar
     _, col_chat, _ = st.columns([1, 4, 1])
     col_preview = None
 
@@ -363,7 +360,7 @@ with col_chat:
     chat_container = st.container(height=550, border=False)
     with chat_container:
         if len(st.session_state.messages) == 1:
-            st.markdown("<p style='text-align: center; margin-top: 2vh; color: #666;'>Minta saya membuat dashboard data (Streamlit) atau web app (HTML)!</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; margin-top: 2vh; color: #666;'>Minta saya membuat sistem CRUD, dashboard data (Streamlit) atau web app (HTML)!</p>", unsafe_allow_html=True)
 
         for message in st.session_state.messages:
             if message["role"] == "system": continue
@@ -445,7 +442,7 @@ with col_chat:
                     response_stream = client.chat.completions.create(
                         model=MODEL_NAME, 
                         messages=st.session_state.messages,
-                        temperature=0.3, max_tokens=4096, stream=True
+                        temperature=0.3, max_tokens=16000, stream=True
                     )
                     for chunk in response_stream:
                         if chunk.choices and len(chunk.choices) > 0:
@@ -463,7 +460,7 @@ with col_chat:
                     
                     save_session_db(st.session_state.current_session_id, st.session_state.username, generate_title_from_messages(st.session_state.messages), st.session_state.messages)
 
-                    # Deteksi Multi-Code (Python vs HTML)
+                    # Deteksi Multi-Code
                     code_match_py = re.search(r'```python\n(.*?)\n```', full_response, re.DOTALL)
                     code_match_html = re.search(r'```html\n(.*?)\n```', full_response, re.DOTALL)
                     
@@ -483,12 +480,13 @@ with col_chat:
                     st.error(f"Kesalahan teknis: {str(e)}")
                     st.session_state.messages.pop()
 
-# --- AREA PREVIEW (HANYA MUNCUL JIKA ADA KODE) ---
+# --- AREA PREVIEW DYNAMIC ---
 if col_preview is not None:
     with col_preview:
         st.markdown('<div class="header-title" style="font-size: 1.8rem; background: linear-gradient(90deg, #00d2ff, #7d4eff);">⚡ Render Workspace</div>', unsafe_allow_html=True)
         st.markdown('<div class="header-subtitle" style="margin-bottom: 10px;">Aplikasi yang dibuat AI akan muncul di sini</div>', unsafe_allow_html=True)
         
+        # Fitur Unduh Siap Pakai
         if st.session_state.code_type == "html":
             file_name = "index.html"
             mime_type = "text/html"
@@ -514,16 +512,18 @@ if col_preview is not None:
             with st.container(border=True, height=550):
                 try:
                     if st.session_state.code_type == "python":
-                        # Injeksi library Anti-Error
+                        # --- INJEKSI FULLSTACK ---
                         local_scope = {
                             "st": st, "pd": pd, "np": np, 
                             "datetime": datetime.datetime, 
-                            "px": px, "go": go
+                            "px": px, "go": go,
+                            "sqlite3": sqlite3, 
+                            "json": json,
+                            "requests": requests 
                         }
                         exec(st.session_state.generated_code, globals(), local_scope)
                         
                     elif st.session_state.code_type == "html":
-                        # Render HTML Interaktif
                         components.html(st.session_state.generated_code, height=530, scrolling=True)
 
                 except Exception as e:
