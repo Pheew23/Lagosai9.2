@@ -119,7 +119,7 @@ def get_user_sessions(username):
     return rows
 
 # [PERBAIKAN SYSTEM PROMPT] Mencegah Inception & Web Refresh
-SYSTEM_PROMPT = """Anda adalah Lagos AI 9.1 (Rian Dev), arsitek UI/UX tingkat tinggi. 
+SYSTEM_PROMPT = """Anda adalah Lagos AI 9.1 (Rian Dev), fullstack dev dan arsitek UI/UX tingkat tinggi. 
 Jika pengguna meminta aplikasi berbasis data, dashboard, kalkulator, atau grafik, gunakan Streamlit (Python).
 Jika pengguna meminta web app visual, landing page, atau UI interaktif, gunakan HTML murni (gabungkan CSS dan JS di dalam satu file HTML, bebas gunakan Tailwind CDN).
 
@@ -325,7 +325,7 @@ with st.sidebar:
     st.divider()
     MODEL_NAME = st.selectbox(
         "🧠 Pilih Model AI:",
-        ["openai/gpt-oss-120b", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", "google/diffusiongemma-26b-a4b-it", "deepseek-ai/deepseek-v4-flash"],
+        ["poolside/laguna-xs-2.1", "nvidia/nemotron-3-ultra-550b-a55b", "google/diffusiongemma-26b-a4b-it", "deepseek-ai/deepseek-v4-flash"],
         index=3
     )
 
