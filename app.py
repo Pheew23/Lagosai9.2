@@ -15,12 +15,13 @@ import hashlib
 import datetime
 import streamlit.components.v1 as components
 from bs4 import BeautifulSoup 
-import traceback # [BARU] Untuk menangkap log error coding AI
-import pandas as pd # [BARU] Sering dipakai AI untuk data
-import numpy as np # [BARU] Sering dipakai AI untuk perhitungan
+import traceback
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 
 # --- 1. KONFIGURASI HALAMAN ---
-# [UBAH] layout menjadi wide agar ada ruang untuk Chat dan Render Aplikasi
 st.set_page_config(
     page_title="Lagos AI 9.1 | Emergent Agent",
     page_icon="🔮",
@@ -32,10 +33,7 @@ st.set_page_config(
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
-
-        html, body, [class*="css"] {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
+        html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         
@@ -120,13 +118,14 @@ def get_user_sessions(username):
     conn.close()
     return rows
 
-# [UBAH] System prompt diubah agar bertindak sebagai Emergent UI builder
-SYSTEM_PROMPT = """Anda adalah Lagos AI 9.1 (Rian Dev), asisten analitik tingkat tinggi dan arsitek UI. 
-Jika pengguna meminta untuk membuat aplikasi, kalkulator, grafik, atau antarmuka visual, Anda HARUS menuliskan KODE STREAMLIT LENGKAP menggunakan Python.
+SYSTEM_PROMPT = """Anda adalah Lagos AI 9.1 (Rian Dev), arsitek UI/UX tingkat tinggi. 
+Jika pengguna meminta aplikasi berbasis data, dashboard, kalkulator kompleks, grafik, atau hal yang cocok dengan Python, gunakan Streamlit.
+Jika pengguna meminta web app visual, landing page, UI interaktif, atau animasi, gunakan HTML murni (gabungkan CSS dan JS di dalam satu file HTML, Anda bebas menggunakan Tailwind CDN atau sejenisnya).
+
 ATURAN KODE:
-1. Bungkus kode dalam blok ```python ... ```
-2. Gunakan `import streamlit as st` di dalam kode.
-3. Pastikan kode bisa langsung dijalankan secara mandiri. Gunakan st.write, st.button, dll."""
+1. Jika Streamlit: Bungkus seluruh kode dengan ```python ... ``` dan pastikan ada import streamlit as st.
+2. Jika HTML/Web App: Bungkus HANYA dengan ```html ... ``` dan berikan struktur <html> lengkap beserta style dan script di dalamnya.
+3. JANGAN memberikan dua blok kode yang berbeda. Pilih salah satu (Python ATAU HTML) yang paling cocok dengan permintaan pengguna."""
 
 def load_session_messages(session_id):
     conn = sqlite3.connect(DB_NAME)
@@ -134,13 +133,10 @@ def load_session_messages(session_id):
     c.execute("SELECT role, content FROM messages WHERE session_id=? ORDER BY id ASC", (session_id,))
     rows = c.fetchall()
     conn.close()
-    
     msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
     for r, c in rows:
-        try:
-            msgs.append({"role": r, "content": json.loads(c)})
-        except:
-            msgs.append({"role": r, "content": c})
+        try: msgs.append({"role": r, "content": json.loads(c)})
+        except: msgs.append({"role": r, "content": c})
     return msgs
 
 def save_session_db(session_id, username, title, messages):
@@ -209,8 +205,7 @@ if not st.session_state.logged_in:
                         st.session_state.username = log_user
                         st.session_state.set_cookie = True
                         st.rerun()
-                    else:
-                        st.error("Username atau password salah!")
+                    else: st.error("Username atau password salah!")
             with tab_register:
                 st.markdown("<h4 style='text-align: center; margin-bottom: 20px;'>Buat Akun Baru</h4>", unsafe_allow_html=True)
                 reg_user = st.text_input("Username Baru", key="reg_user")
@@ -223,10 +218,10 @@ if not st.session_state.logged_in:
 
 
 # --- KODE SETELAH LOGIN ---
-API_KEY = st.secrets["NVIDIA_API_KEY"] 
+# Konfigurasi API (Ubah ini jika Anda pindah ke Groq API atau yang lain)
+API_KEY = st.secrets.get("NVIDIA_API_KEY", "") 
 BASE_URL = "https://integrate.api.nvidia.com/v1"
 
-# Fungsi Multimedia (Diringkas visualnya untuk tempat kode)
 @st.cache_data(show_spinner=False)
 def konversi_gambar_ke_base64(uploaded_file):
     if uploaded_file: return base64.b64encode(uploaded_file.read()).decode('utf-8')
@@ -246,7 +241,7 @@ def ekstrak_teks_dari_dokumen(uploaded_file):
         elif nama_file.endswith('.txt'):
             teks_hasil = uploaded_file.read().decode("utf-8")
         return teks_hasil.strip()
-    except Exception as e: return ""
+    except Exception: return ""
 
 def ambil_teks_dari_link(url):
     try:
@@ -271,11 +266,9 @@ if "messages" not in st.session_state: st.session_state.messages = [{"role": "sy
 if "temp_image" not in st.session_state: st.session_state.temp_image = None
 if "temp_doc" not in st.session_state: st.session_state.temp_doc = None
 if "uploader_key" not in st.session_state: st.session_state.uploader_key = 0
-# [BARU] Variabel untuk menampung kode yang digenerate AI
 if "generated_code" not in st.session_state: st.session_state.generated_code = ""
-# [BARU] Variabel untuk trigger prompt otomatis saat ada error (Self-healing)
+if "code_type" not in st.session_state: st.session_state.code_type = "python"
 if "auto_prompt" not in st.session_state: st.session_state.auto_prompt = None
-
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -283,7 +276,8 @@ with st.sidebar:
     if st.button("➕ Mulai Obrolan Baru", use_container_width=True, type="primary"):
         st.session_state.current_session_id = None
         st.session_state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-        st.session_state.generated_code = "" # Reset kode
+        st.session_state.generated_code = "" 
+        st.session_state.code_type = "python"
         st.rerun()
 
     st.markdown("### 🗂️ Riwayat Obrolan")
@@ -298,13 +292,20 @@ with st.sidebar:
                         st.session_state.current_session_id = sess_id
                         st.session_state.messages = load_session_messages(sess_id)
                         
-                        # [BARU] Saat load histori, cari kode terakhir yang dibuat
                         st.session_state.generated_code = ""
+                        st.session_state.code_type = "python"
                         for msg in reversed(st.session_state.messages):
                             if msg["role"] == "assistant":
-                                code_match = re.search(r'```python\n(.*?)\n```', msg["content"], re.DOTALL)
-                                if code_match:
-                                    st.session_state.generated_code = code_match.group(1)
+                                code_match_py = re.search(r'```python\n(.*?)\n```', msg["content"], re.DOTALL)
+                                code_match_html = re.search(r'```html\n(.*?)\n```', msg["content"], re.DOTALL)
+                                
+                                if code_match_py:
+                                    st.session_state.generated_code = code_match_py.group(1)
+                                    st.session_state.code_type = "python"
+                                    break
+                                elif code_match_html:
+                                    st.session_state.generated_code = code_match_html.group(1)
+                                    st.session_state.code_type = "html"
                                     break
                         st.rerun()
                 with col_del:
@@ -319,7 +320,7 @@ with st.sidebar:
     st.divider()
     MODEL_NAME = st.selectbox(
         "🧠 Pilih Model AI:",
-        ["openai/gpt-oss-120b", "nvidia/nemotron-3-ultra-550b-a55b", "google/diffusiongemma-26b-a4b-it", "deepseek-ai/deepseek-v4-flash"],
+        ["openai/gpt-oss-120b", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", "google/diffusiongemma-26b-a4b-it", "deepseek-ai/deepseek-v4-flash"],
         index=3
     )
 
@@ -328,8 +329,18 @@ with st.sidebar:
         st.session_state.del_cookie = True 
         st.rerun()
 
-# --- [BARU] SPLIT SCREEN LAYOUT ---
-# Membelah layar menjadi 2 kolom: Kiri untuk Chat, Kanan untuk App Preview
+    # Advertisement Space Placeholder
+    st.markdown(
+        '''
+        <div style="background-color: var(--secondary-background-color); border: 1px dashed var(--border-color); padding: 15px; border-radius: 10px; text-align: center; margin-top: 20px;">
+            <span style="color: #888; font-size: 0.75rem;">Advertisement Space</span><br>
+            <span style="font-size: 0.9rem;">Integrasi Iklan Akan Ditampilkan Di Sini</span>
+        </div>
+        ''', unsafe_allow_html=True
+    )
+
+
+# --- SPLIT SCREEN LAYOUT ---
 col_chat, col_preview = st.columns([1, 1], gap="large")
 
 with col_chat:
@@ -339,7 +350,7 @@ with col_chat:
     chat_container = st.container(height=550, border=False)
     with chat_container:
         if len(st.session_state.messages) == 1:
-            st.markdown("<p style='text-align: center; margin-top: 2vh; color: #666;'>Minta saya untuk membuat aplikasi web, grafik, atau alat kalkulasi!</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; margin-top: 2vh; color: #666;'>Minta saya membuat dashboard data (Streamlit) atau web app (HTML)!</p>", unsafe_allow_html=True)
 
         for message in st.session_state.messages:
             if message["role"] == "system": continue
@@ -350,7 +361,6 @@ with col_chat:
 
         st.markdown("<div id='bottom-marker'></div>", unsafe_allow_html=True)
 
-    # AREA INPUT
     current_img = st.session_state.get(f"img_{st.session_state.uploader_key}")
     current_doc = st.session_state.get(f"doc_{st.session_state.uploader_key}")
 
@@ -369,15 +379,12 @@ with col_chat:
     with col_mic:
         audio_bytes = audio_recorder(text="", recording_color="#ff4b4b", neutral_color="#888888", icon_name="microphone", key=f"mic_{st.session_state.uploader_key}")
 
-    # LOGIKA PEMROSESAN PROMPT (Termasuk Auto-Healing Trigger)
     prompt = prompt_text
     
-    # [BARU] Menangkap prompt otomatis dari Self-Healing
     if st.session_state.auto_prompt:
         prompt = st.session_state.auto_prompt
-        st.session_state.auto_prompt = None # Reset setelah ditangkap
+        st.session_state.auto_prompt = None 
 
-    # Logika Audio
     if audio_bytes and not prompt_text:
         with st.spinner("Menerjemahkan suara..."):
             r = sr.Recognizer()
@@ -390,9 +397,8 @@ with col_chat:
                 st.warning("Suara tidak jelas.")
                 prompt = None
 
-    # Pemrosesan Utama AI
     if prompt:
-        with chat_container: # Munculkan pesan user di dalam chat container
+        with chat_container: 
             with st.chat_message("user"):
                 st.markdown(prompt)
 
@@ -426,7 +432,7 @@ with col_chat:
                     response_stream = client.chat.completions.create(
                         model=MODEL_NAME, 
                         messages=st.session_state.messages,
-                        temperature=0.3, max_tokens=16096, stream=True
+                        temperature=0.3, max_tokens=4096, stream=True
                     )
                     for chunk in response_stream:
                         if chunk.choices and len(chunk.choices) > 0:
@@ -444,10 +450,16 @@ with col_chat:
                     
                     save_session_db(st.session_state.current_session_id, st.session_state.username, generate_title_from_messages(st.session_state.messages), st.session_state.messages)
 
-                    # [BARU] Deteksi Kode dari Respons AI (Artifact Extraction)
-                    code_match = re.search(r'```python\n(.*?)\n```', full_response, re.DOTALL)
-                    if code_match:
-                        st.session_state.generated_code = code_match.group(1)
+                    # Deteksi Multi-Code (Python vs HTML)
+                    code_match_py = re.search(r'```python\n(.*?)\n```', full_response, re.DOTALL)
+                    code_match_html = re.search(r'```html\n(.*?)\n```', full_response, re.DOTALL)
+                    
+                    if code_match_py:
+                        st.session_state.generated_code = code_match_py.group(1)
+                        st.session_state.code_type = "python"
+                    elif code_match_html:
+                        st.session_state.generated_code = code_match_html.group(1)
+                        st.session_state.code_type = "html"
 
                     st.session_state.temp_image = None
                     st.session_state.temp_doc = None
@@ -458,7 +470,7 @@ with col_chat:
                     st.error(f"Kesalahan teknis: {str(e)}")
                     st.session_state.messages.pop()
 
-# --- [BARU] KOLOM PREVIEW / ARTIFACTS ---
+# --- KOLOM PREVIEW / ARTIFACTS ---
 with col_preview:
     st.markdown('<div class="header-title" style="font-size: 1.8rem; background: linear-gradient(90deg, #00d2ff, #7d4eff);">⚡ Render Workspace</div>', unsafe_allow_html=True)
     st.markdown('<div class="header-subtitle" style="margin-bottom: 10px;">Aplikasi yang dibuat AI akan muncul di sini</div>', unsafe_allow_html=True)
@@ -468,25 +480,35 @@ with col_preview:
         
         with tab_view:
             with st.container(border=True, height=550):
-                # Sandbox Dinamis Streamlit
                 try:
-                    # Injeksi library yang sering digunakan AI agar tidak NameError
-                    local_scope = {"st": st, "pd": pd, "np": np}
-                    # Eksekusi kode secara live
-                    exec(st.session_state.generated_code, globals(), local_scope)
+                    if st.session_state.code_type == "python":
+                        # Injeksi library Anti-Error
+                        local_scope = {
+                            "st": st, 
+                            "pd": pd, 
+                            "np": np, 
+                            "datetime": datetime.datetime, 
+                            "px": px, 
+                            "go": go
+                        }
+                        exec(st.session_state.generated_code, globals(), local_scope)
+                        
+                    elif st.session_state.code_type == "html":
+                        # Render HTML Interaktif
+                        components.html(st.session_state.generated_code, height=530, scrolling=True)
+
                 except Exception as e:
                     error_trace = traceback.format_exc()
-                    st.error("⚠️ Terdapat kesalahan pada sintaks kode yang dibuat AI.")
+                    st.error(f"⚠️ Terdapat kesalahan pada sintaks kode {st.session_state.code_type} yang dibuat AI.")
                     with st.expander("Lihat Detail Error"):
                         st.code(error_trace, language="bash")
                     
-                    # [BARU] Tombol Self-Healing
                     if st.button("🔧 Minta AI Perbaiki Otomatis", type="primary"):
-                        st.session_state.auto_prompt = f"Kode yang Anda buat tadi menghasilkan error ini:\n```\n{e}\n```\nTolong perbaiki kodenya dan berikan kode Streamlit yang sudah diperbaiki secara utuh."
+                        st.session_state.auto_prompt = f"Kode yang Anda buat tadi menghasilkan error ini:\n```\n{e}\n```\nTolong perbaiki kodenya secara utuh tanpa error."
                         st.rerun()
 
         with tab_code:
-            st.code(st.session_state.generated_code, language="python")
+            st.code(st.session_state.generated_code, language=st.session_state.code_type)
     else:
         with st.container(border=True, height=550):
-            st.info("💡 **Ruang Kerja Kosong**\n\nCoba ketik ini di chat:\n\n*\"Buatkan aplikasi kalkulator zakat dengan visualisasi data\"* \n\nAtau\n\n *\"Buatkan antarmuka dashboard manajemen inventaris dengan sidebar\"*")
+            st.info("💡 **Ruang Kerja Kosong**\n\nCoba ketik ini di chat:\n\n*\"Buatkan saya antarmuka landing page futuristik dengan HTML/TailwindCSS\"* \n\nAtau\n\n *\"Buatkan dashboard visualisasi data interaktif\"*")
