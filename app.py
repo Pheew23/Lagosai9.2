@@ -118,113 +118,118 @@ def get_user_sessions(username):
     conn.close()
     return rows
 
-# --- [FULLSTACK SYSTEM PROMPT] ---
+# --- [SYSTEM PROMPT: FULLSTACK, ANTI-REFRESH & PARTIAL EDIT] ---
 SYSTEM_PROMPT = """Anda adalah Lagos AI 9.1 (Rian Dev), Senior Fullstack Developer & Arsitek Sistem.
-Anda memiliki 2 mode untuk merancang aplikasi yang bisa langsung dijalankan:
-
-1. PYTHON FULLSTACK (Streamlit + SQLite): Gunakan ini untuk aplikasi kompleks, sistem manajemen (CRUD), dashboard, atau jika pengguna meminta fitur database. Anda diizinkan menggunakan modul `sqlite3` untuk membuat file database lokal dan menyimpan data pengguna secara permanen.
-2. FRONTEND WEB (HTML/JS/CSS): Gunakan ini untuk UI visual, landing page, atau web app. Untuk menyimpan data, gunakan `localStorage` via Javascript. Gunakan Tailwind CDN untuk styling.
+Anda memiliki 2 mode utama: PYTHON FULLSTACK (Streamlit + SQLite) dan FRONTEND WEB (HTML/JS/CSS).
 
 ATURAN KODE:
-1. Jika Streamlit: Bungkus seluruh kode dengan ```python ... ``` dan pastikan ada import streamlit as st.
-2. Jika HTML: Bungkus HANYA dengan ```html ... ```.
+1. Jika membuat aplikasi BARU dengan Streamlit: Bungkus seluruh kode dengan ```python ... ``` dan pastikan ada import streamlit as st.
+2. Jika membuat aplikasi BARU dengan HTML: Bungkus HANYA dengan ```html ... ```.
+3. MODE REVISI (SANGAT PENTING): Jika pengguna meminta revisi atau perubahan pada kode yang SUDAH ANDA BUAT, DILARANG mencetak ulang seluruh kode! Anda WAJIB menggunakan format edit berikut untuk mengubah bagian yang spesifik saja:
 
+```edit
+<<SEARCH>>
+[masukkan potongan kode lama persis seperti aslinya]
+<<REPLACE>>
+[masukkan potongan kode baru sebagai pengganti]
 ATURAN WAJIB HTML (SANDBOX SAFE):
-- DILARANG KERAS menggunakan dummy link navigasi seperti `<a href="#">` atau `<a href="/">`. 
-- Jika harus membuat link, WAJIB gunakan `<a href="javascript:void(0);">`.
-- DILARANG KERAS menggunakan `<form action="">`. Cegah refresh dengan `<form onsubmit="event.preventDefault()">`.
-- DILARANG menggunakan tag `<meta http-equiv="refresh">` atau `window.location`.
+
+DILARANG menggunakan link dummy navigasi seperti <a href="#"> atau <a href="/">. Gunakan <a href="javascript:void(0);">.
+
+Cegah refresh pada form dengan <form onsubmit="event.preventDefault()">.
+
+DILARANG menggunakan tag <meta http-equiv="refresh"> atau manipulasi window.location.
 """
 
 def load_session_messages(session_id):
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute("SELECT role, content FROM messages WHERE session_id=? ORDER BY id ASC", (session_id,))
-    rows = c.fetchall()
-    conn.close()
-    msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
-    for r, c in rows:
-        try: msgs.append({"role": r, "content": json.loads(c)})
-        except: msgs.append({"role": r, "content": c})
-    return msgs
+conn = sqlite3.connect(DB_NAME)
+c = conn.cursor()
+c.execute("SELECT role, content FROM messages WHERE session_id=? ORDER BY id ASC", (session_id,))
+rows = c.fetchall()
+conn.close()
+msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
+for r, c in rows:
+try: msgs.append({"role": r, "content": json.loads(c)})
+except: msgs.append({"role": r, "content": c})
+return msgs
 
 def save_session_db(session_id, username, title, messages):
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute("INSERT OR REPLACE INTO sessions (session_id, username, title, updated_at) VALUES (?, ?, ?, ?)", 
-              (session_id, username, title, datetime.datetime.now()))
-    c.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
-    for msg in messages:
-        if msg["role"] != "system":
-            c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)", 
-                      (session_id, msg["role"], json.dumps(msg["content"])))
-    conn.commit()
-    conn.close()
+conn = sqlite3.connect(DB_NAME)
+c = conn.cursor()
+c.execute("INSERT OR REPLACE INTO sessions (session_id, username, title, updated_at) VALUES (?, ?, ?, ?)",
+(session_id, username, title, datetime.datetime.now()))
+c.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
+for msg in messages:
+if msg["role"] != "system":
+c.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)",
+(session_id, msg["role"], json.dumps(msg["content"])))
+conn.commit()
+conn.close()
 
 def delete_session_db(session_id):
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute("DELETE FROM sessions WHERE session_id=?", (session_id,))
-    c.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
-    conn.commit()
-    conn.close()
+conn = sqlite3.connect(DB_NAME)
+c = conn.cursor()
+c.execute("DELETE FROM sessions WHERE session_id=?", (session_id,))
+c.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
+conn.commit()
+conn.close()
 
 init_db()
 
-# --- 3. SISTEM AUTENTIKASI ---
+--- 3. SISTEM AUTENTIKASI ---
 if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.username = ""
+st.session_state.logged_in = False
+st.session_state.username = ""
 
 cookie_logged_in = cookie_manager.get("is_logged_in")
 cookie_username = cookie_manager.get("saved_username")
 
 if st.session_state.get("del_cookie") == True:
-    cookie_manager.delete("is_logged_in", key="del_login_cookie")
-    cookie_manager.delete("saved_username", key="del_user_cookie")
-    st.session_state.del_cookie = False 
-    cookie_logged_in = None 
-    cookie_username = None
+cookie_manager.delete("is_logged_in", key="del_login_cookie")
+cookie_manager.delete("saved_username", key="del_user_cookie")
+st.session_state.del_cookie = False
+cookie_logged_in = None
+cookie_username = None
 
 if cookie_logged_in == "True" and not st.session_state.logged_in:
-    st.session_state.logged_in = True
-    st.session_state.username = cookie_username
+st.session_state.logged_in = True
+st.session_state.username = cookie_username
 
 if st.session_state.get("set_cookie") == True:
-    expire_date = datetime.datetime.now() + datetime.timedelta(days=7)
-    cookie_manager.set("is_logged_in", "True", expires_at=expire_date, key="set_login_cookie")
-    cookie_manager.set("saved_username", st.session_state.username, expires_at=expire_date, key="set_user_cookie")
-    st.session_state.set_cookie = False
+expire_date = datetime.datetime.now() + datetime.timedelta(days=7)
+cookie_manager.set("is_logged_in", "True", expires_at=expire_date, key="set_login_cookie")
+cookie_manager.set("saved_username", st.session_state.username, expires_at=expire_date, key="set_user_cookie")
+st.session_state.set_cookie = False
 
 if not st.session_state.logged_in:
-    st.markdown('<div class="header-title">🔮 Lagos AI 9.1</div>', unsafe_allow_html=True)
-    st.markdown('<div class="header-subtitle">Silakan Masuk untuk Mengakses Asisten</div>', unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 1.5, 1])
-    with col2:
-        with st.container(border=True):
-            tab_login, tab_register = st.tabs(["🔑 Masuk", "📝 Daftar Baru"])
-            with tab_login:
-                st.markdown("<h4 style='text-align: center; margin-bottom: 20px;'>Selamat Datang Kembali</h4>", unsafe_allow_html=True)
-                log_user = st.text_input("Username", key="log_user")
-                log_pass = st.text_input("Password", type="password", key="log_pass")
-                if st.button("Masuk", use_container_width=True, type="primary"):
-                    if authenticate_user(log_user, log_pass):
-                        st.session_state.logged_in = True
-                        st.session_state.username = log_user
-                        st.session_state.set_cookie = True
-                        st.rerun()
-                    else: st.error("Username atau password salah!")
-            with tab_register:
-                st.markdown("<h4 style='text-align: center; margin-bottom: 20px;'>Buat Akun Baru</h4>", unsafe_allow_html=True)
-                reg_user = st.text_input("Username Baru", key="reg_user")
-                reg_pass = st.text_input("Password Baru", type="password", key="reg_pass")
-                if st.button("Daftar & Buat Akun", use_container_width=True):
-                    if reg_user and reg_pass:
-                        if register_user(reg_user, reg_pass): st.success("✅ Berhasil mendaftar!")
-                        else: st.error("❌ Username sudah dipakai.")
-    st.stop()
-
-
+st.markdown('🔮 Lagos AI 9.1', unsafe_allow_html=True)
+st.markdown('Silakan Masuk untuk Mengakses Asisten', unsafe_allow_html=True)
+col1, col2, col3 = st.columns([1, 1.5, 1])
+with col2:
+with st.container(border=True):
+tab_login, tab_register = st.tabs(["🔑 Masuk", "📝 Daftar Baru"])
+with tab_login:
+st.markdown("Selamat Datang Kembali", unsafe_allow_html=True)
+log_user = st.text_input("Username", key="log_user")
+log_pass = st.text_input("Password", type="password", key="log_pass")
+if st.button("Masuk", use_container_width=True, type="primary"):
+if authenticate_user(log_user, log_pass):
+st.session_state.logged_in = True
+st.session_state.username = log_user
+st.session_state.set_cookie = True
+st.rerun()
+else: st.error("Username atau password salah!")
+with tab_register:
+st.markdown("Buat Akun Baru", unsafe_allow_html=True)
+reg_user = st.text_input("Username Baru", key="reg_user")
+reg_pass = st.text_input("Password Baru", type="password", key="reg_pass")
+if st.button("Daftar & Buat Akun", use_container_width=True):
+if reg_user and reg_pass:
+if register_user(reg_user, reg_pass): st.success("✅ Berhasil mendaftar!")
+else: st.error("❌ Username sudah dipakai.")
+st.stop()
+### BAGIAN 2 (Copy dan paste tepat di baris bawah setelah Bagian 1)
+```python
 # --- KODE SETELAH LOGIN ---
 API_KEY = st.secrets.get("NVIDIA_API_KEY", "") 
 BASE_URL = "https://integrate.api.nvidia.com/v1"
@@ -299,21 +304,28 @@ with st.sidebar:
                         st.session_state.current_session_id = sess_id
                         st.session_state.messages = load_session_messages(sess_id)
                         
+                        # Merekonstruksi state kode dari riwayat secara kronologis (maju)
                         st.session_state.generated_code = ""
                         st.session_state.code_type = "python"
-                        for msg in reversed(st.session_state.messages):
+                        for msg in st.session_state.messages:
                             if msg["role"] == "assistant":
+                                # Cek Edit Parsial
+                                code_match_edit = re.search(r'```edit\n<<SEARCH>>\n(.*?)\n<<REPLACE>>\n(.*?)\n```', msg["content"], re.DOTALL)
+                                # Cek Kode Penuh Baru
                                 code_match_py = re.search(r'```python\n(.*?)\n```', msg["content"], re.DOTALL)
                                 code_match_html = re.search(r'```html\n(.*?)\n```', msg["content"], re.DOTALL)
                                 
-                                if code_match_py:
+                                if code_match_edit:
+                                    search_text = code_match_edit.group(1).strip()
+                                    replace_text = code_match_edit.group(2).strip()
+                                    if search_text in st.session_state.generated_code:
+                                        st.session_state.generated_code = st.session_state.generated_code.replace(search_text, replace_text)
+                                elif code_match_py:
                                     st.session_state.generated_code = code_match_py.group(1)
                                     st.session_state.code_type = "python"
-                                    break
                                 elif code_match_html:
                                     st.session_state.generated_code = code_match_html.group(1)
                                     st.session_state.code_type = "html"
-                                    break
                         st.rerun()
                 with col_del:
                     if st.button("🗑️", key=f"del_{sess_id}"):
@@ -327,7 +339,7 @@ with st.sidebar:
     st.divider()
     MODEL_NAME = st.selectbox(
         "🧠 Pilih Model AI:",
-        ["poolside/laguna-xs-2.1", "nvidia/nemotron-3-ultra-550b-a55b", "qwen/qwen3-next-80b-a3b-instruct", "deepseek-ai/deepseek-v4-pro"],
+        ["openai/gpt-oss-120b", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", "google/diffusiongemma-26b-a4b-it", "deepseek-ai/deepseek-v4-flash"],
         index=3
     )
 
@@ -345,7 +357,7 @@ with st.sidebar:
         ''', unsafe_allow_html=True
     )
 
-# --- [DYNAMIC LAYOUT ARTIFACTS] ---
+# --- LAYOUT DINAMIS ---
 if st.session_state.generated_code:
     col_chat, col_preview = st.columns([1, 1], gap="large")
 else:
@@ -460,13 +472,24 @@ with col_chat:
                     
                     save_session_db(st.session_state.current_session_id, st.session_state.username, generate_title_from_messages(st.session_state.messages), st.session_state.messages)
 
-                    # Deteksi Multi-Code
+                    # --- [SISTEM DETEKSI DAN REVISI KODE PARSIAL] ---
+                    code_match_edit = re.search(r'```edit\n<<SEARCH>>\n(.*?)\n<<REPLACE>>\n(.*?)\n```', full_response, re.DOTALL)
                     code_match_py = re.search(r'```python\n(.*?)\n```', full_response, re.DOTALL)
                     code_match_html = re.search(r'```html\n(.*?)\n```', full_response, re.DOTALL)
                     
-                    if code_match_py:
+                    if code_match_edit:
+                        search_text = code_match_edit.group(1).strip()
+                        replace_text = code_match_edit.group(2).strip()
+                        
+                        if search_text in st.session_state.generated_code:
+                            st.session_state.generated_code = st.session_state.generated_code.replace(search_text, replace_text)
+                        else:
+                            st.error("⚠️ AI gagal melakukan revisi: Teks spesifik yang dicari tidak ditemukan di kode asli. Silakan suruh AI ulangi.")
+                            
+                    elif code_match_py:
                         st.session_state.generated_code = code_match_py.group(1)
                         st.session_state.code_type = "python"
+                        
                     elif code_match_html:
                         st.session_state.generated_code = code_match_html.group(1)
                         st.session_state.code_type = "html"
@@ -486,7 +509,6 @@ if col_preview is not None:
         st.markdown('<div class="header-title" style="font-size: 1.8rem; background: linear-gradient(90deg, #00d2ff, #7d4eff);">⚡ Render Workspace</div>', unsafe_allow_html=True)
         st.markdown('<div class="header-subtitle" style="margin-bottom: 10px;">Aplikasi yang dibuat AI akan muncul di sini</div>', unsafe_allow_html=True)
         
-        # Fitur Unduh Siap Pakai
         if st.session_state.code_type == "html":
             file_name = "index.html"
             mime_type = "text/html"
