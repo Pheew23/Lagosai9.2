@@ -118,14 +118,21 @@ def get_user_sessions(username):
     conn.close()
     return rows
 
+# [PERBAIKAN SYSTEM PROMPT] Mencegah Inception & Web Refresh
 SYSTEM_PROMPT = """Anda adalah Lagos AI 9.1 (Rian Dev), arsitek UI/UX tingkat tinggi. 
-Jika pengguna meminta aplikasi berbasis data, dashboard, kalkulator kompleks, grafik, atau hal yang cocok dengan Python, gunakan Streamlit.
-Jika pengguna meminta web app visual, landing page, UI interaktif, atau animasi, gunakan HTML murni (gabungkan CSS dan JS di dalam satu file HTML, Anda bebas menggunakan Tailwind CDN atau sejenisnya).
+Jika pengguna meminta aplikasi berbasis data, dashboard, kalkulator, atau grafik, gunakan Streamlit (Python).
+Jika pengguna meminta web app visual, landing page, atau UI interaktif, gunakan HTML murni (gabungkan CSS dan JS di dalam satu file HTML, bebas gunakan Tailwind CDN).
 
 ATURAN KODE:
 1. Jika Streamlit: Bungkus seluruh kode dengan ```python ... ``` dan pastikan ada import streamlit as st.
-2. Jika HTML/Web App: Bungkus HANYA dengan ```html ... ``` dan berikan struktur <html> lengkap beserta style dan script di dalamnya.
-3. JANGAN memberikan dua blok kode yang berbeda. Pilih salah satu (Python ATAU HTML) yang paling cocok dengan permintaan pengguna."""
+2. Jika HTML: Bungkus HANYA dengan ```html ... ```.
+
+ATURAN WAJIB HTML (SANDBOX SAFE):
+- DILARANG KERAS menggunakan dummy link navigasi seperti `<a href="#">` atau `<a href="/">`.
+- Jika harus membuat link, WAJIB gunakan `<a href="javascript:void(0);">`.
+- DILARANG KERAS menggunakan `<form action="">`. Cegah refresh dengan `<form onsubmit="event.preventDefault()">`.
+- DILARANG menggunakan tag `<meta http-equiv="refresh">` atau `window.location`.
+"""
 
 def load_session_messages(session_id):
     conn = sqlite3.connect(DB_NAME)
@@ -187,7 +194,6 @@ if st.session_state.get("set_cookie") == True:
     cookie_manager.set("saved_username", st.session_state.username, expires_at=expire_date, key="set_user_cookie")
     st.session_state.set_cookie = False
 
-
 if not st.session_state.logged_in:
     st.markdown('<div class="header-title">🔮 Lagos AI 9.1</div>', unsafe_allow_html=True)
     st.markdown('<div class="header-subtitle">Silakan Masuk untuk Mengakses Asisten</div>', unsafe_allow_html=True)
@@ -218,7 +224,6 @@ if not st.session_state.logged_in:
 
 
 # --- KODE SETELAH LOGIN ---
-# Konfigurasi API (Ubah ini jika Anda pindah ke Groq API atau yang lain)
 API_KEY = st.secrets.get("NVIDIA_API_KEY", "") 
 BASE_URL = "https://integrate.api.nvidia.com/v1"
 
@@ -329,7 +334,6 @@ with st.sidebar:
         st.session_state.del_cookie = True 
         st.rerun()
 
-    # Advertisement Space Placeholder
     st.markdown(
         '''
         <div style="background-color: var(--secondary-background-color); border: 1px dashed var(--border-color); padding: 15px; border-radius: 10px; text-align: center; margin-top: 20px;">
@@ -340,9 +344,18 @@ with st.sidebar:
     )
 
 
-# --- SPLIT SCREEN LAYOUT ---
-col_chat, col_preview = st.columns([1, 1], gap="large")
+# --- [PERBAIKAN] LAYOUT DINAMIS ---
+# Jika ada kode, layar dibagi 2 (Chat & Workspace). 
+# Jika belum ada kode, layar Workspace dihilangkan dan Chat diletakkan agak ke tengah.
 
+if st.session_state.generated_code:
+    col_chat, col_preview = st.columns([1, 1], gap="large")
+else:
+    # Mempersempit layar chat agar tidak terlalu melebar saat sendirian di layar
+    _, col_chat, _ = st.columns([1, 4, 1])
+    col_preview = None
+
+# --- AREA OBROLAN ---
 with col_chat:
     st.markdown('<div class="header-title" style="font-size: 1.8rem;">🔮 Lagos AI 9.1</div>', unsafe_allow_html=True)
     st.markdown('<div class="header-subtitle" style="margin-bottom: 10px;">Emergent Agent Chat</div>', unsafe_allow_html=True)
@@ -470,12 +483,31 @@ with col_chat:
                     st.error(f"Kesalahan teknis: {str(e)}")
                     st.session_state.messages.pop()
 
-# --- KOLOM PREVIEW / ARTIFACTS ---
-with col_preview:
-    st.markdown('<div class="header-title" style="font-size: 1.8rem; background: linear-gradient(90deg, #00d2ff, #7d4eff);">⚡ Render Workspace</div>', unsafe_allow_html=True)
-    st.markdown('<div class="header-subtitle" style="margin-bottom: 10px;">Aplikasi yang dibuat AI akan muncul di sini</div>', unsafe_allow_html=True)
-    
-    if st.session_state.generated_code:
+# --- AREA PREVIEW (HANYA MUNCUL JIKA ADA KODE) ---
+if col_preview is not None:
+    with col_preview:
+        st.markdown('<div class="header-title" style="font-size: 1.8rem; background: linear-gradient(90deg, #00d2ff, #7d4eff);">⚡ Render Workspace</div>', unsafe_allow_html=True)
+        st.markdown('<div class="header-subtitle" style="margin-bottom: 10px;">Aplikasi yang dibuat AI akan muncul di sini</div>', unsafe_allow_html=True)
+        
+        if st.session_state.code_type == "html":
+            file_name = "index.html"
+            mime_type = "text/html"
+            label_btn = "📥 Unduh Web HTML (Siap Pakai)"
+        else:
+            file_name = "app.py"
+            mime_type = "text/x-python"
+            label_btn = "📥 Unduh Web Streamlit (Siap Pakai)"
+            
+        st.download_button(
+            label=label_btn,
+            data=st.session_state.generated_code,
+            file_name=file_name,
+            mime=mime_type,
+            use_container_width=True,
+            type="primary"
+        )
+        st.markdown("<br>", unsafe_allow_html=True)
+
         tab_view, tab_code = st.tabs(["🚀 Aplikasi Dinamis", "💻 Source Code"])
         
         with tab_view:
@@ -484,12 +516,9 @@ with col_preview:
                     if st.session_state.code_type == "python":
                         # Injeksi library Anti-Error
                         local_scope = {
-                            "st": st, 
-                            "pd": pd, 
-                            "np": np, 
+                            "st": st, "pd": pd, "np": np, 
                             "datetime": datetime.datetime, 
-                            "px": px, 
-                            "go": go
+                            "px": px, "go": go
                         }
                         exec(st.session_state.generated_code, globals(), local_scope)
                         
@@ -509,6 +538,3 @@ with col_preview:
 
         with tab_code:
             st.code(st.session_state.generated_code, language=st.session_state.code_type)
-    else:
-        with st.container(border=True, height=550):
-            st.info("💡 **Ruang Kerja Kosong**\n\nCoba ketik ini di chat:\n\n*\"Buatkan saya antarmuka landing page futuristik dengan HTML/TailwindCSS\"* \n\nAtau\n\n *\"Buatkan dashboard visualisasi data interaktif\"*")
