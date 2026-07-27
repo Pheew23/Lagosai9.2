@@ -426,7 +426,7 @@ with col_chat:
                     response_stream = client.chat.completions.create(
                         model=MODEL_NAME, 
                         messages=st.session_state.messages,
-                        temperature=0.3, max_tokens=4096, stream=True
+                        temperature=0.3, max_tokens=16096, stream=True
                     )
                     for chunk in response_stream:
                         if chunk.choices and len(chunk.choices) > 0:
