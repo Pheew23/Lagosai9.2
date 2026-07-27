@@ -118,19 +118,24 @@ def get_user_sessions(username):
     conn.close()
     return rows
 
-# --- [SYSTEM PROMPT VERSI STABIL (FULL REWRITE)] ---
+# --- [SYSTEM PROMPT: FULLSTACK, ANTI-REFRESH & PARTIAL EDIT AMAN] ---
 SYSTEM_PROMPT = """Anda adalah Lagos AI 9.1 (Rian Dev), Senior Fullstack Developer & Arsitek Sistem.
-Anda memiliki 2 mode untuk merancang aplikasi yang bisa langsung dijalankan:
-
-1. PYTHON FULLSTACK (Streamlit + SQLite): Gunakan ini untuk aplikasi kompleks, sistem manajemen (CRUD), dashboard, atau jika pengguna meminta fitur database.
-2. FRONTEND WEB (HTML/JS/CSS): Gunakan ini untuk UI visual, landing page, atau web app.
+Anda memiliki 2 mode utama: PYTHON FULLSTACK (Streamlit + SQLite) dan FRONTEND WEB (HTML/JS/CSS).
 
 ATURAN KODE:
-1. Jika Streamlit: Bungkus seluruh kode dengan ```python ... ``` dan pastikan ada import streamlit as st.
-2. Jika HTML: Bungkus HANYA dengan ```html ... ```.
+1. Jika membuat aplikasi BARU dengan Streamlit: Bungkus seluruh kode dengan ```python ... ``` dan pastikan ada import streamlit as st.
+2. Jika membuat aplikasi BARU dengan HTML: Bungkus HANYA dengan ```html ... ```.
+3. MODE REVISI (SANGAT PENTING): Jika pengguna meminta revisi atau perubahan pada kode yang SUDAH ANDA BUAT, DILARANG mencetak ulang seluruh kode! Anda WAJIB menggunakan format edit berikut untuk mengubah bagian yang spesifik saja:
+
+```edit
+[SEARCH]
+(masukkan potongan kode lama persis seperti aslinya di sini)
+[REPLACE]
+(masukkan potongan kode baru sebagai pengganti di sini)
+```
 
 ATURAN WAJIB HTML (SANDBOX SAFE):
-- DILARANG KERAS menggunakan dummy link navigasi seperti `<a href="#">` atau `<a href="/">`. Gunakan `<a href="javascript:void(0);">`.
+- DILARANG menggunakan link dummy navigasi seperti `<a href="#">` atau `<a href="/">`. Gunakan `<a href="javascript:void(0);">`.
 - Cegah refresh pada form dengan `<form onsubmit="event.preventDefault()">`.
 - DILARANG menggunakan tag `<meta http-equiv="refresh">` atau manipulasi `window.location`.
 """
@@ -223,6 +228,7 @@ if not st.session_state.logged_in:
                         else: st.error("❌ Username sudah dipakai.")
     st.stop()
 
+
 # --- KODE SETELAH LOGIN ---
 API_KEY = st.secrets.get("NVIDIA_API_KEY", "") 
 BASE_URL = "https://integrate.api.nvidia.com/v1"
@@ -297,21 +303,28 @@ with st.sidebar:
                         st.session_state.current_session_id = sess_id
                         st.session_state.messages = load_session_messages(sess_id)
                         
+                        # Merekonstruksi state kode dari riwayat secara kronologis (maju)
                         st.session_state.generated_code = ""
                         st.session_state.code_type = "python"
-                        for msg in reversed(st.session_state.messages):
+                        for msg in st.session_state.messages:
                             if msg["role"] == "assistant":
+                                # Cek Edit Parsial (Format Aman Kurung Siku)
+                                code_match_edit = re.search(r'```edit\n\[SEARCH\]\n(.*?)\n\[REPLACE\]\n(.*?)\n```', msg["content"], re.DOTALL)
+                                # Cek Kode Penuh Baru
                                 code_match_py = re.search(r'```python\n(.*?)\n```', msg["content"], re.DOTALL)
                                 code_match_html = re.search(r'```html\n(.*?)\n```', msg["content"], re.DOTALL)
                                 
-                                if code_match_py:
+                                if code_match_edit:
+                                    search_text = code_match_edit.group(1).strip()
+                                    replace_text = code_match_edit.group(2).strip()
+                                    if search_text in st.session_state.generated_code:
+                                        st.session_state.generated_code = st.session_state.generated_code.replace(search_text, replace_text)
+                                elif code_match_py:
                                     st.session_state.generated_code = code_match_py.group(1)
                                     st.session_state.code_type = "python"
-                                    break
                                 elif code_match_html:
                                     st.session_state.generated_code = code_match_html.group(1)
                                     st.session_state.code_type = "html"
-                                    break
                         st.rerun()
                 with col_del:
                     if st.button("🗑️", key=f"del_{sess_id}"):
@@ -432,7 +445,13 @@ with col_chat:
 
         with chat_container:
             with st.chat_message("assistant"):
-                client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
+                # --- [PERBAIKAN KONEKSI API DENGAN TIMEOUT DAN RETRIES] ---
+                client = OpenAI(
+                    base_url=BASE_URL, 
+                    api_key=API_KEY,
+                    timeout=120.0,
+                    max_retries=3
+                )
                 placeholder = st.empty()
                 full_response = ""
 
@@ -458,12 +477,24 @@ with col_chat:
                     
                     save_session_db(st.session_state.current_session_id, st.session_state.username, generate_title_from_messages(st.session_state.messages), st.session_state.messages)
 
+                    # --- [SISTEM DETEKSI DAN REVISI KODE PARSIAL AMAN] ---
+                    code_match_edit = re.search(r'```edit\n\[SEARCH\]\n(.*?)\n\[REPLACE\]\n(.*?)\n```', full_response, re.DOTALL)
                     code_match_py = re.search(r'```python\n(.*?)\n```', full_response, re.DOTALL)
                     code_match_html = re.search(r'```html\n(.*?)\n```', full_response, re.DOTALL)
                     
-                    if code_match_py:
+                    if code_match_edit:
+                        search_text = code_match_edit.group(1).strip()
+                        replace_text = code_match_edit.group(2).strip()
+                        
+                        if search_text in st.session_state.generated_code:
+                            st.session_state.generated_code = st.session_state.generated_code.replace(search_text, replace_text)
+                        else:
+                            st.error("⚠️ AI gagal melakukan revisi: Teks spesifik yang dicari tidak ditemukan di kode asli. Silakan suruh AI ulangi.")
+                            
+                    elif code_match_py:
                         st.session_state.generated_code = code_match_py.group(1)
                         st.session_state.code_type = "python"
+                        
                     elif code_match_html:
                         st.session_state.generated_code = code_match_html.group(1)
                         st.session_state.code_type = "html"
@@ -474,7 +505,9 @@ with col_chat:
                     st.rerun()
 
                 except Exception as e:
-                    st.error(f"Kesalahan teknis: {str(e)}")
+                    st.error(f"Kesalahan teknis API: {str(e)}")
+                    with st.expander("Lihat Detail Error Asli (Untuk Debugging)"):
+                        st.code(traceback.format_exc(), language="bash")
                     st.session_state.messages.pop()
 
 # --- AREA PREVIEW DYNAMIC ---
