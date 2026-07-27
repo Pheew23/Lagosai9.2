@@ -129,9 +129,9 @@ ATURAN KODE:
 
 ```edit
 [SEARCH]
-(masukkan potongan kode lama persis seperti aslinya di sini)
+(masukkan potongan kode lama persis seperti aslinya di sini, TERMASUK SPASI DAN INDENTASI)
 [REPLACE]
-(masukkan potongan kode baru sebagai pengganti di sini)
+(masukkan potongan kode baru sebagai pengganti di sini, TERMASUK SPASI DAN INDENTASI)
 ```
 
 ATURAN WAJIB HTML (SANDBOX SAFE):
@@ -308,15 +308,15 @@ with st.sidebar:
                         st.session_state.code_type = "python"
                         for msg in st.session_state.messages:
                             if msg["role"] == "assistant":
-                                # Cek Edit Parsial (Format Aman Kurung Siku)
+                                # Cek Edit Parsial (Strip hanya pada karakter enter \r\n, pertahankan spasi)
                                 code_match_edit = re.search(r'```edit\n\[SEARCH\]\n(.*?)\n\[REPLACE\]\n(.*?)\n```', msg["content"], re.DOTALL)
                                 # Cek Kode Penuh Baru
                                 code_match_py = re.search(r'```python\n(.*?)\n```', msg["content"], re.DOTALL)
                                 code_match_html = re.search(r'```html\n(.*?)\n```', msg["content"], re.DOTALL)
                                 
                                 if code_match_edit:
-                                    search_text = code_match_edit.group(1).strip()
-                                    replace_text = code_match_edit.group(2).strip()
+                                    search_text = code_match_edit.group(1).strip('\r\n')
+                                    replace_text = code_match_edit.group(2).strip('\r\n')
                                     if search_text in st.session_state.generated_code:
                                         st.session_state.generated_code = st.session_state.generated_code.replace(search_text, replace_text)
                                 elif code_match_py:
@@ -356,11 +356,11 @@ with st.sidebar:
         ''', unsafe_allow_html=True
     )
 
-# --- LAYOUT DINAMIS ---
+# --- LAYOUT DINAMIS (MOBILE FRIENDLY) ---
 if st.session_state.generated_code:
-    col_chat, col_preview = st.columns([1, 1], gap="large")
+    col_chat, col_preview = st.tabs(["💬 Area Obrolan", "⚡ Render Workspace"])
 else:
-    _, col_chat, _ = st.columns([1, 4, 1])
+    col_chat = st.container()
     col_preview = None
 
 # --- AREA OBROLAN ---
@@ -445,7 +445,6 @@ with col_chat:
 
         with chat_container:
             with st.chat_message("assistant"):
-                # --- [PERBAIKAN KONEKSI API DENGAN TIMEOUT DAN RETRIES] ---
                 client = OpenAI(
                     base_url=BASE_URL, 
                     api_key=API_KEY,
@@ -478,18 +477,19 @@ with col_chat:
                     save_session_db(st.session_state.current_session_id, st.session_state.username, generate_title_from_messages(st.session_state.messages), st.session_state.messages)
 
                     # --- [SISTEM DETEKSI DAN REVISI KODE PARSIAL AMAN] ---
+                    # Perhatikan penggunaan strip('\r\n') agar spasi/indentasi Python tetap utuh!
                     code_match_edit = re.search(r'```edit\n\[SEARCH\]\n(.*?)\n\[REPLACE\]\n(.*?)\n```', full_response, re.DOTALL)
                     code_match_py = re.search(r'```python\n(.*?)\n```', full_response, re.DOTALL)
                     code_match_html = re.search(r'```html\n(.*?)\n```', full_response, re.DOTALL)
                     
                     if code_match_edit:
-                        search_text = code_match_edit.group(1).strip()
-                        replace_text = code_match_edit.group(2).strip()
+                        search_text = code_match_edit.group(1).strip('\r\n')
+                        replace_text = code_match_edit.group(2).strip('\r\n')
                         
                         if search_text in st.session_state.generated_code:
                             st.session_state.generated_code = st.session_state.generated_code.replace(search_text, replace_text)
                         else:
-                            st.error("⚠️ AI gagal melakukan revisi: Teks spesifik yang dicari tidak ditemukan di kode asli. Silakan suruh AI ulangi.")
+                            st.error("⚠️ AI gagal melakukan revisi: Teks spesifik yang dicari tidak persis sama dengan kode asli. Silakan suruh AI ulangi.")
                             
                     elif code_match_py:
                         st.session_state.generated_code = code_match_py.group(1)
