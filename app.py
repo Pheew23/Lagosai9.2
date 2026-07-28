@@ -338,7 +338,7 @@ with st.sidebar:
     st.divider()
     MODEL_NAME = st.selectbox(
         "🧠 Pilih Model AI:",
-        ["poolside/laguna-xs-2.1", "nvidia/nemotron-3-ultra-550b-a55b", "google/diffusiongemma-26b-a4b-it", "mistralai/mistral-medium-3.5-128b"],
+        ["poolside/laguna-xs-2.1", "nvidia/nemotron-3-ultra-550b-a55b", "google/diffusiongemma-26b-a4b-it", "google/gemma-4-31b-it"],
         index=1
     )
 
