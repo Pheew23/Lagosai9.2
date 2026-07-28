@@ -240,7 +240,7 @@ if not st.session_state.logged_in:
 
 # --- KODE SETELAH LOGIN ---
 API_KEY = st.secrets.get("NVIDIA_API_KEY", "") 
-BASE_URL = "[https://integrate.api.nvidia.com/v1](https://integrate.api.nvidia.com/v1)"
+BASE_URL = "https://integrate.api.nvidia.com/v1"  # <-- Pastikan ada https:// di sini
 
 @st.cache_data(show_spinner=False)
 def konversi_gambar_ke_base64(uploaded_file):
