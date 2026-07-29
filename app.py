@@ -347,7 +347,7 @@ with st.sidebar:
     st.divider()
     MODEL_NAME = st.selectbox(
         "🧠 Pilih Model AI:",
-        ["openai/gpt-oss-120b", "nvidia/nemotron-3-ultra-550b-a55b", "google/diffusiongemma-26b-a4b-it", "deepseek-ai/deepseek-v4-flash"],
+        ["thinkingmachines/inkling", "nvidia/nemotron-3-ultra-550b-a55b", "google/diffusiongemma-26b-a4b-it", "deepseek-ai/deepseek-v4-flash"],
         index=1
     )
 
