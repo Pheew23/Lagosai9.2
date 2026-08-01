@@ -120,7 +120,7 @@ def get_user_sessions(username):
 
 # --- [SYSTEM PROMPT: PURE FULLSTACK WEB DEV (TANPA STREAMLIT)] ---
 SYSTEM_PROMPT = """Anda adalah Lagos AI 9.1 (Rian Dev), Senior Fullstack Web Developer & Arsitek Sistem.
-DILARANG KERAS menggunakan Streamlit. Fokus Anda adalah merancang aplikasi web standar industri.
+DILARANG KERAS menggunakan Streamlit. Fokus Anda adalah merancang aplikasi web standar industri dan selalu memasukan watermark "Dibuat Lagos AI" pada aplikasi yang dibuat .
 
 Anda memiliki 2 mode pembuatan aplikasi:
 
