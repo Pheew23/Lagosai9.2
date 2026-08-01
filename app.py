@@ -14,7 +14,7 @@ import uuid
 import hashlib
 import datetime
 import streamlit.components.v1 as components
-from bs4 import BeautifulSoup 
+from bs4 import BeautifulSoup
 import traceback
 import pandas as pd
 import numpy as np
@@ -32,7 +32,7 @@ st.set_page_config(
 # --- 2. CUSTOM CSS ---
 st.markdown("""
     <style>
-        @import url('[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap)');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
         html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
@@ -126,7 +126,7 @@ Anda memiliki 2 mode pembuatan aplikasi:
 
 1. SINGLE-FILE WEB APP (HTML/JS/CSS): 
    Gunakan ini jika pengguna meminta aplikasi, UI, atau sistem CRUD yang bisa langsung berjalan di browser.
-   - Desain: Selalu gunakan Tailwind CSS via CDN (<script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>) dan FontAwesome. Desain harus sangat modern, profesional, dan responsif (mobile-friendly).
+   - Desain: Selalu gunakan Tailwind CSS via CDN (https://cdn.tailwindcss.com) dan FontAwesome. Desain harus sangat modern, profesional, dan responsif (mobile-friendly).
    - Database/Logika: Gunakan JavaScript murni. Jika pengguna meminta fitur simpan data (CRUD), gunakan `localStorage` atau `IndexedDB` agar data tidak hilang saat direfresh.
    - Format: Bungkus SELURUH kode (HTML, CSS, JS) ke dalam satu blok ```html ... ```.
 
@@ -135,13 +135,8 @@ Anda memiliki 2 mode pembuatan aplikasi:
    - Format: Berikan kode backend dalam blok ```python ... ```.
 
 ATURAN REVISI (SANGAT PENTING): 
-Jika pengguna meminta revisi pada kode yang sudah dibuat, gunakan format edit parsial berikut:
-```edit
-[SEARCH]
-(masukkan potongan kode lama persis seperti aslinya, TERMASUK SPASI DAN INDENTASI)
-[REPLACE]
-(masukkan potongan kode baru sebagai pengganti, TERMASUK SPASI DAN INDENTASI)
-```
+Jika pengguna meminta revisi atau perbaikan bug pada aplikasi yang sudah dibuat, Anda WAJIB memberikan KODE APLIKASI SECARA UTUH (FULL CODE) yang sudah diperbarui. 
+JANGAN memberikan hanya potongan kode. Selalu bungkus seluruh kode terbaru dalam satu blok ```html atau ```python.
 
 ATURAN KEAMANAN FRONTEND:
 - Cegah refresh pada form dengan `<form onsubmit="event.preventDefault()">`.
@@ -240,7 +235,7 @@ if not st.session_state.logged_in:
 
 # --- KODE SETELAH LOGIN ---
 API_KEY = st.secrets.get("NVIDIA_API_KEY", "") 
-BASE_URL = "https://integrate.api.nvidia.com/v1"  # <-- Pastikan ada https:// di sini
+BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 @st.cache_data(show_spinner=False)
 def konversi_gambar_ke_base64(uploaded_file):
@@ -312,28 +307,27 @@ with st.sidebar:
                         st.session_state.current_session_id = sess_id
                         st.session_state.messages = load_session_messages(sess_id)
                         
-                        # Merekonstruksi state kode dari riwayat secara kronologis (maju)
+                        # Merekonstruksi state kode dari riwayat secara kronologis (maju) menggunakan FindAll dan Index Terakhir
                         st.session_state.generated_code = ""
                         st.session_state.code_type = "html"
                         for msg in st.session_state.messages:
                             if msg["role"] == "assistant":
-                                # Cek Edit Parsial (Strip hanya pada karakter enter \r\n, pertahankan spasi)
-                                code_match_edit = re.search(r'```edit\n\[SEARCH\]\n(.*?)\n\[REPLACE\]\n(.*?)\n```', msg["content"], re.DOTALL)
-                                # Cek Kode Penuh Baru
-                                code_match_py = re.search(r'```python\n(.*?)\n```', msg["content"], re.DOTALL)
-                                code_match_html = re.search(r'```html\n(.*?)\n```', msg["content"], re.DOTALL)
+                                py_blocks = re.findall(r'```(?:python|py)\s*\n(.*?)```', msg["content"], re.DOTALL | re.IGNORECASE)
+                                html_blocks = re.findall(r'```(?:html|xml)\s*\n(.*?)```', msg["content"], re.DOTALL | re.IGNORECASE)
+                                edit_blocks = re.findall(r'```edit\s*\n\[SEARCH\]\n(.*?)\[REPLACE\]\n(.*?)```', msg["content"], re.DOTALL | re.IGNORECASE)
                                 
-                                if code_match_edit:
-                                    search_text = code_match_edit.group(1).strip('\r\n')
-                                    replace_text = code_match_edit.group(2).strip('\r\n')
-                                    if search_text in st.session_state.generated_code:
-                                        st.session_state.generated_code = st.session_state.generated_code.replace(search_text, replace_text)
-                                elif code_match_py:
-                                    st.session_state.generated_code = code_match_py.group(1)
+                                if py_blocks:
+                                    st.session_state.generated_code = py_blocks[-1].strip()
                                     st.session_state.code_type = "python"
-                                elif code_match_html:
-                                    st.session_state.generated_code = code_match_html.group(1)
+                                elif html_blocks:
+                                    st.session_state.generated_code = html_blocks[-1].strip()
                                     st.session_state.code_type = "html"
+                                elif edit_blocks:
+                                    for search_text, replace_text in edit_blocks:
+                                        s_text = search_text.strip('\r\n')
+                                        r_text = replace_text.strip('\r\n')
+                                        if s_text in st.session_state.generated_code:
+                                            st.session_state.generated_code = st.session_state.generated_code.replace(s_text, r_text)
                         st.rerun()
                 with col_del:
                     if st.button("🗑️", key=f"del_{sess_id}"):
@@ -485,28 +479,26 @@ with col_chat:
                     
                     save_session_db(st.session_state.current_session_id, st.session_state.username, generate_title_from_messages(st.session_state.messages), st.session_state.messages)
 
-                    # --- [SISTEM DETEKSI DAN REVISI KODE PARSIAL AMAN] ---
-                    # Perhatikan penggunaan strip('\r\n') agar spasi/indentasi Python tetap utuh!
-                    code_match_edit = re.search(r'```edit\n\[SEARCH\]\n(.*?)\n\[REPLACE\]\n(.*?)\n```', full_response, re.DOTALL)
-                    code_match_py = re.search(r'```python\n(.*?)\n```', full_response, re.DOTALL)
-                    code_match_html = re.search(r'```html\n(.*?)\n```', full_response, re.DOTALL)
+                    # --- [SISTEM DETEKSI DAN REVISI KODE AMAN TERBARU] ---
+                    # Menggunakan findall lalu [-1] untuk memastikan selalu mengambil blok kode terbaru (terakhir)
+                    py_blocks = re.findall(r'```(?:python|py)\s*\n(.*?)```', full_response, re.DOTALL | re.IGNORECASE)
+                    html_blocks = re.findall(r'```(?:html|xml)\s*\n(.*?)```', full_response, re.DOTALL | re.IGNORECASE)
+                    edit_blocks = re.findall(r'```edit\s*\n\[SEARCH\]\n(.*?)\[REPLACE\]\n(.*?)```', full_response, re.DOTALL | re.IGNORECASE)
                     
-                    if code_match_edit:
-                        search_text = code_match_edit.group(1).strip('\r\n')
-                        replace_text = code_match_edit.group(2).strip('\r\n')
-                        
-                        if search_text in st.session_state.generated_code:
-                            st.session_state.generated_code = st.session_state.generated_code.replace(search_text, replace_text)
-                        else:
-                            st.error("⚠️ AI gagal melakukan revisi: Teks spesifik yang dicari tidak persis sama dengan kode asli. Silakan suruh AI ulangi.")
-                            
-                    elif code_match_py:
-                        st.session_state.generated_code = code_match_py.group(1)
+                    if py_blocks:
+                        st.session_state.generated_code = py_blocks[-1].strip()
                         st.session_state.code_type = "python"
-                        
-                    elif code_match_html:
-                        st.session_state.generated_code = code_match_html.group(1)
+                    elif html_blocks:
+                        st.session_state.generated_code = html_blocks[-1].strip()
                         st.session_state.code_type = "html"
+                    elif edit_blocks:
+                        for search_text, replace_text in edit_blocks:
+                            s_text = search_text.strip('\r\n')
+                            r_text = replace_text.strip('\r\n')
+                            if s_text in st.session_state.generated_code:
+                                st.session_state.generated_code = st.session_state.generated_code.replace(s_text, r_text)
+                            else:
+                                st.error("⚠️ AI gagal melakukan revisi parsial. Silakan suruh AI berikan 'KODE UTUH'.")
 
                     st.session_state.temp_image = None
                     st.session_state.temp_doc = None
