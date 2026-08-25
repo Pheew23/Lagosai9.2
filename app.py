@@ -1782,7 +1782,8 @@ def main():
                         else: st.warning("⚠️ Harap isi data!")
         st.stop()
 
-    # Get selected model name for brand bar
+    # Get selected model name for brand bar (default before sidebar)
+    selected_model = list(MODEL_MAPPING.keys())[0]  # Default first model
     selected_model_name = MODEL_MAPPING.get(selected_model, "Aether")
     render_brand_bar(selected_model_name)
 
