@@ -813,59 +813,484 @@ class MarketUtils:
 def inject_custom_css():
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
-    :root{
-      --bg:#0b0e14; --surface:#10141f; --card:#141927; --input:#151a28;
-      --border:rgba(255,255,255,.07); --text:#e8ecf4; --muted:#8b93a7;
-      --grad:linear-gradient(135deg,#7c5cff 0%,#22d3ee 100%);
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f9f9fb;
+      --bg-tertiary: #f0f0f5;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b7b;
+      --text-tertiary: #9a9aaf;
+      --border-light: #e5e5eb;
+      --border-medium: #d0d0d8;
+      --accent-primary: #d97757;
+      --accent-hover: #c46748;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
     }
-    html,body,[data-testid="stAppViewContainer"],section.main{background:var(--bg) !important;}
-    html,body,[class*="css"]{font-family:'Plus Jakarta Sans',sans-serif;}
-    h1,h2,h3{font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif;}
-    #MainMenu,footer{visibility:hidden;}
-    header[data-testid="stHeader"]{background:transparent;}
-    ::-webkit-scrollbar{width:8px;height:8px;}
-    ::-webkit-scrollbar-thumb{background:#2a3145;border-radius:8px;}
-    ::-webkit-scrollbar-track{background:transparent;}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
-    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-    .brand-bar{display:flex;justify-content:space-between;align-items:center;padding:4px 2px 20px;animation:fadeUp .5s ease;}
-    .brand-logo{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:1.2rem;color:#fff;}
-    .brand-logo .dot{width:36px;height:36px;border-radius:11px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 20px rgba(124,92,255,.45);}
-    .status-pill{display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#4ade80;font-size:.75rem;font-weight:700;}
-    .status-pill .pulse{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 1.4s infinite;}
-    .hero{text-align:center;padding:30px 0 10px;animation:fadeUp .6s ease;}
-    .hero-badge{display:inline-block;padding:6px 16px;border-radius:999px;background:rgba(124,92,255,.12);border:1px solid rgba(124,92,255,.35);color:#b7a6ff;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;}
-    .hero-title{font-size:2.6rem;font-weight:800;color:#fff;margin:0;}
-    .hero-title span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-    .hero-sub{color:var(--muted);font-size:.95rem;max-width:440px;margin:10px auto 26px;}
-    [data-testid="stSidebar"]{background:var(--surface) !important;border-right:1px solid var(--border);}
-    .profile-card{display:flex;gap:12px;align-items:center;padding:14px;border-radius:16px;background:linear-gradient(145deg,rgba(124,92,255,.14),rgba(34,211,238,.07));border:1px solid rgba(124,92,255,.3);margin-bottom:8px;}
-    .profile-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--grad);color:#fff;font-weight:800;font-size:1.1rem;flex-shrink:0;}
-    .profile-name{color:#fff;font-weight:700;font-size:.95rem;}
-    .profile-role{color:var(--muted);font-size:.72rem;letter-spacing:.04em;}
-    .side-label{font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:16px 0 8px;}
-    [data-testid="stSidebar"] .stButton>button{background:transparent !important;border:none !important;border-radius:12px !important;color:var(--text) !important;justify-content:flex-start;box-shadow:none !important;}
-    [data-testid="stSidebar"] .stButton>button:hover{background:rgba(255,255,255,.06) !important;}
-    [data-testid="stSidebar"] .stButton>button[kind="primary"]{background:rgba(124,92,255,.16) !important;color:#b7a6ff !important;font-weight:700 !important;}
-    [data-testid="stSidebar"] .stButton>button p{white-space:nowrap !important;overflow:hidden !important;text-overflow:ellipsis !important;text-align:left !important;}
-    .stButton>button{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:12px;font-weight:600;}
-    .stButton>button:hover{border-color:rgba(124,92,255,.5);}
-    .stButton>button[kind="primary"]{background:var(--grad) !important;border:none !important;color:#fff !important;font-weight:700;box-shadow:0 6px 22px rgba(124,92,255,.35);}
-    .stDownloadButton>button{background:var(--grad) !important;border:none !important;color:#fff !important;border-radius:12px;font-weight:700;}
-    .stTextInput input,.stTextInput>div>input{background:var(--input) !important;border:1px solid var(--border) !important;border-radius:12px;color:var(--text);}
-    .stTabs [data-testid="stTabsSelectionBar"]{background:var(--grad);height:2px;}
-    .stTabs button{color:var(--muted);font-weight:700;}
-    .stTabs button[aria-selected="true"]{color:#fff;}
-    [data-testid="stChatMessage"]{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px 18px;margin-bottom:12px;animation:fadeUp .45s ease both;}
-    .user-bubble{display:flex;justify-content:flex-end;margin:14px 0;animation:fadeUp .45s ease both;}
-    .user-bubble .inner{max-width:82%;padding:12px 20px;border-radius:18px 18px 4px 18px;background:linear-gradient(135deg,#7c5cff,#5a3df0);color:#fff;box-shadow:0 6px 24px rgba(124,92,255,.35);white-space:pre-wrap;line-height:1.5;}
-    .agent-chip{display:inline-flex;align-items:center;gap:8px;margin:2px 10px 2px 0;padding:6px 14px;border-radius:999px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.28);color:#7dd8ea;font-size:.73rem;font-weight:700;animation:fadeUp .4s ease both;}
-    .agent-chip .pulse{width:6px;height:6px;border-radius:50%;background:#22d3ee;animation:pulse 1.2s infinite;}
-    [data-testid="stChatInput"] textarea{background:var(--input) !important;border:1px solid var(--border) !important;border-radius:999px !important;padding:14px 20px !important;box-shadow:none !important;color:var(--text);}
-    [data-testid="stChatInput"] textarea:focus{border-color:transparent !important;box-shadow:0 0 0 2px rgba(124,92,255,.6) !important;}
-    pre,.stCodeBlock{background:#0f1320 !important;border:1px solid var(--border);border-radius:12px;}
-    .stAlert{border-radius:12px !important;border:1px solid var(--border) !important;}
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1a1a1b;
+        --bg-secondary: #242426;
+        --bg-tertiary: #2a2a2d;
+        --text-primary: #f5f5f5;
+        --text-secondary: #a0a0b0;
+        --text-tertiary: #707080;
+        --border-light: #353538;
+        --border-medium: #404045;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+        --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
+      }
+    }
+    
+    * { box-sizing: border-box; }
+    
+    html, body, [data-testid="stAppViewContainer"], section.main {
+      background: var(--bg-primary) !important;
+    }
+    
+    html, body, [class*="css"] {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+      color: var(--text-primary);
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+    
+    #MainMenu, footer, header[data-testid="stHeader"] {
+      visibility: hidden;
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    
+    /* Brand Bar - Claude-style minimal */
+    .brand-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px 8px;
+      border-bottom: 1px solid var(--border-light);
+      background: var(--bg-primary);
+      animation: fadeIn 0.4s ease;
+    }
+    
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    
+    .brand-logo .dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #d97757 0%, #e89276 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+    
+    .status-pill .pulse {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    
+    /* Hero Section - Clean & Minimal */
+    .hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+      animation: slideUp 0.5s ease;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-light);
+    }
+    
+    .hero-title {
+      font-size: 2.2rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 12px;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+    }
+    
+    .hero-title span {
+      color: var(--accent-primary);
+    }
+    
+    .hero-sub {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      line-height: 1.6;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    
+    /* Sidebar - Claude-style */
+    [data-testid="stSidebar"] {
+      background: var(--bg-secondary) !important;
+      border-right: 1px solid var(--border-light);
+      padding: 16px 12px !important;
+    }
+    
+    .profile-card {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-light);
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .profile-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #d97757, #e89276);
+      color: #fff;
+      font-weight: 600;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    
+    .profile-name {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    .profile-role {
+      color: var(--text-tertiary);
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .side-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      font-weight: 600;
+      margin: 20px 0 10px;
+      padding-left: 4px;
+    }
+    
+    /* Sidebar buttons */
+    [data-testid="stSidebar"] .stButton > button {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 8px !important;
+      color: var(--text-secondary) !important;
+      justify-content: flex-start !important;
+      padding: 10px 12px !important;
+      font-size: 0.85rem !important;
+      font-weight: 500 !important;
+      transition: all 0.15s ease !important;
+    }
+    
+    [data-testid="stSidebar"] .stButton > button:hover {
+      background: var(--bg-tertiary) !important;
+      color: var(--text-primary) !important;
+    }
+    
+    [data-testid="stSidebar"] .stButton > button[kind="primary"] {
+      background: var(--accent-primary) !important;
+      color: #fff !important;
+      font-weight: 600 !important;
+      box-shadow: var(--shadow-sm) !important;
+    }
+    
+    [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
+      background: var(--accent-hover) !important;
+    }
+    
+    [data-testid="stSidebar"] .stButton > button p {
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      text-align: left !important;
+    }
+    
+    /* Main buttons */
+    .stButton > button {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-medium);
+      color: var(--text-primary);
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 0.85rem;
+      padding: 8px 16px;
+      transition: all 0.15s ease;
+    }
+    
+    .stButton > button:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+    
+    .stButton > button[kind="primary"] {
+      background: var(--accent-primary) !important;
+      border: none !important;
+      color: #fff !important;
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .stButton > button[kind="primary"]:hover {
+      background: var(--accent-hover) !important;
+    }
+    
+    /* Download buttons */
+    .stDownloadButton > button {
+      background: var(--accent-primary) !important;
+      border: none !important;
+      color: #fff !important;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    
+    /* Text inputs */
+    .stTextInput input, .stTextInput > div > input {
+      background: var(--bg-primary) !important;
+      border: 1px solid var(--border-medium) !important;
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      padding: 10px 12px;
+    }
+    
+    .stTextInput input:focus {
+      border-color: var(--accent-primary) !important;
+      outline: none !important;
+      box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.1) !important;
+    }
+    
+    /* Tabs */
+    .stTabs [data-testid="stTabsSelectionBar"] {
+      background: var(--accent-primary);
+      height: 2px;
+    }
+    
+    .stTabs button {
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 0.85rem;
+      padding: 8px 16px;
+    }
+    
+    .stTabs button[aria-selected="true"] {
+      color: var(--accent-primary);
+      font-weight: 600;
+    }
+    
+    /* Chat messages - Claude style */
+    [data-testid="stChatMessage"] {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 16px 0 !important;
+      margin-bottom: 8px !important;
+      animation: slideUp 0.35s ease;
+    }
+    
+    [data-testid="stChatMessage"] .stMarkdown {
+      color: var(--text-primary);
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+    
+    /* User message bubble - subtle */
+    .user-bubble {
+      display: flex;
+      justify-content: flex-end;
+      margin: 16px 0;
+      animation: slideUp 0.35s ease;
+    }
+    
+    .user-bubble .inner {
+      max-width: 80%;
+      padding: 12px 18px;
+      border-radius: 18px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+      white-space: pre-wrap;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+    
+    /* Agent chips - minimal indicators */
+    .agent-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 4px 8px 4px 0;
+      padding: 5px 12px;
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-light);
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      font-weight: 500;
+      animation: slideUp 0.3s ease;
+    }
+    
+    .agent-chip .pulse {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      animation: pulse 1.5s infinite;
+    }
+    
+    /* Chat input - Claude style */
+    [data-testid="stChatInput"] {
+      padding: 16px 0 !important;
+    }
+    
+    [data-testid="stChatInput"] textarea {
+      background: var(--bg-primary) !important;
+      border: 1px solid var(--border-medium) !important;
+      border-radius: 12px !important;
+      padding: 14px 18px !important;
+      box-shadow: var(--shadow-sm) !important;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      resize: none;
+    }
+    
+    [data-testid="stChatInput"] textarea:focus {
+      border-color: var(--accent-primary) !important;
+      box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.12) !important;
+      outline: none !important;
+    }
+    
+    [data-testid="stChatInput"] textarea::placeholder {
+      color: var(--text-tertiary);
+    }
+    
+    /* Code blocks */
+    pre, .stCodeBlock {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+      font-size: 0.85rem;
+    }
+    
+    /* Alerts */
+    .stAlert {
+      border-radius: 8px !important;
+      border: 1px solid var(--border-light) !important;
+      background: var(--bg-secondary) !important;
+    }
+    
+    /* File pills */
+    .file-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-light);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin: 8px 0;
+    }
+    
+    /* Divider styling */
+    hr {
+      border: none !important;
+      border-top: 1px solid var(--border-light) !important;
+      margin: 16px 0 !important;
+    }
+    
+    /* Container adjustments */
+    .stMainBlockContainer > div:first-child {
+      padding: 0 24px;
+    }
+    
+    /* Markdown content */
+    .stMarkdown p, .stMarkdown li {
+      line-height: 1.7;
+      color: var(--text-primary);
+    }
+    
+    .stMarkdown a {
+      color: var(--accent-primary);
+      text-decoration: none;
+    }
+    
+    .stMarkdown a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Bottom marker for auto-scroll */
+    #bottom-marker {
+      height: 1px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -873,8 +1298,8 @@ def inject_custom_css():
 def render_brand_bar():
     st.markdown("""
     <div class="brand-bar">
-      <div class="brand-logo"><span class="dot">🤖</span> Lagøs <span style="color:#8b93a7;font-weight:500;">AI</span></div>
-      <div class="status-pill"><span class="pulse"></span> Sistem Aktif</div>
+      <div class="brand-logo"><span class="dot">🤖</span> Lagøs AI</div>
+      <div class="status-pill"><span class="pulse"></span> Online</div>
     </div>""", unsafe_allow_html=True)
 
 
@@ -885,7 +1310,7 @@ def render_profile_card(username):
     <div class="profile-card">
       <div class="profile-avatar">{html_escape(initial)}</div>
       <div><div class="profile-name">{html_escape(nama)}</div>
-      <div class="profile-role">ANALYST • AKTIF</div></div>
+      <div class="profile-role">Pro Member</div></div>
     </div>""", unsafe_allow_html=True)
 
 
@@ -913,9 +1338,9 @@ def apakah_jawaban_rusak(teks):
 def render_hero_login():
     st.markdown("""
     <div class="hero">
-      <div class="hero-badge">✦ Sistem Analitik Otonom</div>
-      <h1 class="hero-title">Lagøs <span>AI Agent</span></h1>
-      <p class="hero-sub">Riset web multi-sumber, analisis pasar, dan otomatisasi dokumen — dalam satu percakapan.</p>
+      <div class="hero-badge">✦ AI Assistant</div>
+      <h1 class="hero-title">Lagøs <span>AI</span></h1>
+      <p class="hero-sub">Your intelligent assistant for research, analysis, and productivity. Powered by advanced AI models.</p>
     </div>""", unsafe_allow_html=True)
 
 
