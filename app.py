@@ -37,12 +37,12 @@ BASE_URL = "https://integrate.api.nvidia.com/v1"
 B3 = "`" * 3
 
 MODEL_MAPPING = {
-    "meta/muse-glimmer-30b": "1. Aether (Flash)",
-    "google/diffusiongemma-26b-a4b-it": "2. Verper (pro)",
-    "nvidia/nemotron-3.5-lightning-30b-a3b": "3. Numayr(Eksklusif)",
-    "thinkingmachines/inkling": "4. Nova (Unstable)",
-    "deepseek-ai/deepseek-v4-flash-0731": "5. Zeta (Under Construction)",
-    "google/veo-3.1-fast-generate-preview": "6. Generator Gambar (coming soon)"
+    "meta/muse-glimmer-30b": "Aether",
+    "google/diffusiongemma-26b-a4b-it": "Verper",
+    "nvidia/nemotron-3.5-lightning-30b-a3b": "Numayr",
+    "thinkingmachines/inkling": "Nova",
+    "deepseek-ai/deepseek-v4-flash-0731": "Zeta",
+    "google/veo-3.1-fast-generate-preview": "Image Gen"
 }
 
 HTTP = requests.Session()
@@ -52,7 +52,340 @@ HTTP.headers.update({
     'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
 })
 
-HTTP_TIMEOUT = 8  # seragam & cepat
+HTTP_TIMEOUT = 8
+
+# ==========================================
+# CLAUDE AI STYLE CONFIGURATION
+# ==========================================
+CLAUDE_COLORS = {
+    "bg_primary": "#FFFFFF",
+    "bg_secondary": "#F9FAFB",
+    "bg_sidebar": "#F9FAFB",
+    "text_primary": "#1F2937",
+    "text_secondary": "#6B7280",
+    "accent": "#D97757",
+    "accent_hover": "#C4664A",
+    "border": "#E5E7EB",
+    "message_user_bg": "#F3F4F6",
+    "code_bg": "#F9FAFB",
+    "success": "#10B981",
+    "error": "#EF4444"
+}
+
+CUSTOM_CSS = f"""
+<style>
+    /* Import Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+    
+    /* Global Reset & Base */
+    .stApp {{
+        background-color: {CLAUDE_COLORS['bg_primary']};
+        font-family: 'Inter', sans-serif;
+        color: {CLAUDE_COLORS['text_primary']};
+    }}
+    
+    /* Hide Streamlit Default Elements */
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
+    .stDeployButton {{display: none;}}
+    
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {{
+        background-color: {CLAUDE_COLORS['bg_sidebar']};
+        border-right: 1px solid {CLAUDE_COLORS['border']};
+    }}
+    
+    [data-testid="stSidebar"] .stMarkdown {{
+        color: {CLAUDE_COLORS['text_primary']};
+    }}
+    
+    /* Brand Bar - Clean & Minimal */
+    .brand-bar {{
+        padding: 1rem 0;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid {CLAUDE_COLORS['border']};
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }}
+    
+    .brand-logo {{
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: {CLAUDE_COLORS['text_primary']};
+        letter-spacing: -0.02em;
+    }}
+    
+    .brand-logo span {{
+        color: {CLAUDE_COLORS['accent']};
+    }}
+    
+    .model-badge {{
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        background-color: {CLAUDE_COLORS['bg_primary']};
+        border: 1px solid {CLAUDE_COLORS['border']};
+        border-radius: 999px;
+        color: {CLAUDE_COLORS['text_secondary']};
+        font-weight: 500;
+    }}
+    
+    /* Profile Card */
+    .profile-card {{
+        background: {CLAUDE_COLORS['bg_primary']};
+        border: 1px solid {CLAUDE_COLORS['border']};
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 1rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }}
+    
+    .avatar {{
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, {CLAUDE_COLORS['accent']}, {CLAUDE_COLORS['accent_hover']});
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+    }}
+    
+    .profile-info h4 {{
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: {CLAUDE_COLORS['text_primary']};
+    }}
+    
+    .profile-info p {{
+        margin: 0.25rem 0 0 0;
+        font-size: 0.8rem;
+        color: {CLAUDE_COLORS['text_secondary']};
+    }}
+    
+    /* Chat Container - Full Width, Clean */
+    .chat-container {{
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }}
+    
+    /* Message Styling - Claude Style */
+    .message-row {{
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        animation: fadeIn 0.3s ease;
+    }}
+    
+    @keyframes fadeIn {{
+        from {{ opacity: 0; transform: translateY(10px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
+    }}
+    
+    .message-avatar {{
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }}
+    
+    .message-avatar.user {{
+        background-color: {CLAUDE_COLORS['message_user_bg']};
+        color: {CLAUDE_COLORS['text_secondary']};
+    }}
+    
+    .message-avatar.assistant {{
+        background: linear-gradient(135deg, {CLAUDE_COLORS['accent']}, {CLAUDE_COLORS['accent_hover']});
+        color: white;
+    }}
+    
+    .message-content {{
+        flex: 1;
+        line-height: 1.7;
+        font-size: 1rem;
+        color: {CLAUDE_COLORS['text_primary']};
+    }}
+    
+    .message-content.user {{
+        padding-top: 0.5rem;
+    }}
+    
+    .message-content.assistant {{
+        padding-top: 0.5rem;
+    }}
+    
+    /* Remove background box for assistant - Pure Claude Style */
+    .message-row.assistant .message-content {{
+        background: transparent;
+        padding-left: 0;
+    }}
+    
+    /* Markdown Content Styling */
+    .message-content h1, .message-content h2, .message-content h3 {{
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+        color: {CLAUDE_COLORS['text_primary']};
+    }}
+    
+    .message-content h1 {{ font-size: 1.75rem; }}
+    .message-content h2 {{ font-size: 1.5rem; }}
+    .message-content h3 {{ font-size: 1.25rem; }}
+    
+    .message-content p {{
+        margin-bottom: 1rem;
+    }}
+    
+    .message-content ul, .message-content ol {{
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }}
+    
+    .message-content li {{
+        margin-bottom: 0.5rem;
+    }}
+    
+    /* Code Blocks - JetBrains Mono */
+    .message-content pre {{
+        background-color: {CLAUDE_COLORS['code_bg']};
+        border: 1px solid {CLAUDE_COLORS['border']};
+        border-radius: 8px;
+        padding: 1rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+    }}
+    
+    .message-content code {{
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.875rem;
+        color: {CLAUDE_COLORS['text_primary']};
+    }}
+    
+    .message-content :not(pre) > code {{
+        background-color: {CLAUDE_COLORS['code_bg']};
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        border: 1px solid {CLAUDE_COLORS['border']};
+    }}
+    
+    /* Input Area - Clean & Floating */
+    .input-container {{
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: {CLAUDE_COLORS['bg_primary']};
+        border-top: 1px solid {CLAUDE_COLORS['border']};
+        padding: 1rem 2rem;
+        z-index: 100;
+    }}
+    
+    .input-wrapper {{
+        max-width: 900px;
+        margin: 0 auto;
+        position: relative;
+    }}
+    
+    .stTextInput > div > div > input {{
+        border: 1px solid {CLAUDE_COLORS['border']};
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        background-color: {CLAUDE_COLORS['bg_primary']};
+        transition: all 0.2s ease;
+    }}
+    
+    .stTextInput > div > div > input:focus {{
+        border-color: {CLAUDE_COLORS['accent']};
+        box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.1);
+        outline: none;
+    }}
+    
+    .stTextInput > div > div > input::placeholder {{
+        color: {CLAUDE_COLORS['text_secondary']};
+    }}
+    
+    /* Buttons */
+    .stButton > button {{
+        background-color: {CLAUDE_COLORS['accent']};
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }}
+    
+    .stButton > button:hover {{
+        background-color: {CLAUDE_COLORS['accent_hover']};
+        transform: translateY(-1px);
+    }}
+    
+    /* Session Cards */
+    .session-card {{
+        background: {CLAUDE_COLORS['bg_primary']};
+        border: 1px solid {CLAUDE_COLORS['border']};
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }}
+    
+    .session-card:hover {{
+        border-color: {CLAUDE_COLORS['accent']};
+        background-color: {CLAUDE_COLORS['bg_secondary']};
+    }}
+    
+    .session-card h5 {{
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: {CLAUDE_COLORS['text_primary']};
+    }}
+    
+    .session-card p {{
+        margin: 0.25rem 0 0 0;
+        font-size: 0.75rem;
+        color: {CLAUDE_COLORS['text_secondary']};
+    }}
+    
+    /* Status Indicator */
+    .status-dot {{
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: {CLAUDE_COLORS['success']};
+        display: inline-block;
+        margin-right: 0.5rem;
+    }}
+    
+    /* Responsive */
+    @media (max-width: 768px) {{
+        .chat-container {{
+            padding: 1rem;
+        }}
+        .input-container {{
+            padding: 1rem;
+        }}
+        .brand-logo {{
+            font-size: 1.1rem;
+        }}
+    }}
+</style>
+"""
 
 def panggil_api_dengan_retry(client_instance, **kwargs):
     max_retries = 4
@@ -1295,11 +1628,11 @@ def inject_custom_css():
     """, unsafe_allow_html=True)
 
 
-def render_brand_bar():
-    st.markdown("""
+def render_brand_bar(selected_model_name=""):
+    st.markdown(f"""
     <div class="brand-bar">
-      <div class="brand-logo"><span class="dot">🤖</span> Lagøs AI</div>
-      <div class="status-pill"><span class="pulse"></span> Online</div>
+      <div class="brand-logo"><span>Lagøs</span> AI</div>
+      <div class="model-badge">{html_escape(selected_model_name)}</div>
     </div>""", unsafe_allow_html=True)
 
 
@@ -1308,9 +1641,11 @@ def render_profile_card(username):
     initial = nama[0].upper() if nama else "G"
     st.markdown(f"""
     <div class="profile-card">
-      <div class="profile-avatar">{html_escape(initial)}</div>
-      <div><div class="profile-name">{html_escape(nama)}</div>
-      <div class="profile-role">Pro Member</div></div>
+      <div class="avatar">{html_escape(initial)}</div>
+      <div class="profile-info">
+        <h4>{html_escape(nama)}</h4>
+        <p>Active Now</p>
+      </div>
     </div>""", unsafe_allow_html=True)
 
 
@@ -1447,52 +1782,54 @@ def main():
                         else: st.warning("⚠️ Harap isi data!")
         st.stop()
 
-    render_brand_bar()
+    # Get selected model name for brand bar
+    selected_model_name = MODEL_MAPPING.get(selected_model, "Aether")
+    render_brand_bar(selected_model_name)
 
     with st.sidebar:
         render_profile_card(st.session_state.username)
         st.divider()
 
-        if st.button("➕ Chat Baru", use_container_width=True, type="primary"):
+        if st.button("➕ New Chat", use_container_width=True, type="primary"):
             st.session_state.current_session_id = None
             st.session_state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
             st.session_state.token_usage = 0
             st.rerun()
 
-        if st.button("🗑️ Hapus Obrolan Aktif", use_container_width=True):
+        if st.button("🗑️ Delete Active Chat", use_container_width=True):
             if st.session_state.current_session_id:
                 DatabaseManager.delete_session(st.session_state.current_session_id)
                 st.session_state.current_session_id = None
                 st.session_state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
                 st.rerun()
             else:
-                st.toast("Tidak ada obrolan aktif yang bisa dihapus.")
+                st.toast("No active chat to delete.")
 
-        st.markdown('<div class="side-label">Riwayat Percakapan</div>', unsafe_allow_html=True)
+        st.markdown('<div class="side-label">Chat History</div>', unsafe_allow_html=True)
         sessions = DatabaseManager.get_user_sessions(st.session_state.username)
 
         if sessions:
             with st.container(height=450, border=False):
                 for sess_id, title in sessions:
                     btn_type = "primary" if st.session_state.current_session_id == sess_id else "secondary"
-                    if st.button(title, key=f"btn_{sess_id}", use_container_width=True, type=btn_type, help=title):
+                    if st.button(title[:30] + "..." if len(title) > 30 else title, key=f"btn_{sess_id}", use_container_width=True, type=btn_type, help=title):
                         st.session_state.current_session_id = sess_id
                         st.session_state.messages = DatabaseManager.load_session_messages(sess_id)
                         st.session_state.token_usage = 0
                         st.rerun()
 
         st.divider()
-        st.markdown('<div class="side-label">Model AI</div>', unsafe_allow_html=True)
-        selected_model = st.selectbox("Pilih model aktif:", list(MODEL_MAPPING.keys()),
+        st.markdown('<div class="side-label">AI Model</div>', unsafe_allow_html=True)
+        selected_model = st.selectbox("Select active model:", list(MODEL_MAPPING.keys()),
                                        format_func=lambda x: MODEL_MAPPING[x], label_visibility="collapsed")
 
         st.divider()
-        st.markdown('<div class="side-label">Statistik Sesi</div>', unsafe_allow_html=True)
-        st.info(f"🪙 Est. Token Dipakai: **{st.session_state.token_usage:,}**")
+        st.markdown('<div class="side-label">Session Stats</div>', unsafe_allow_html=True)
+        st.info(f"🪙 Tokens Used: **{st.session_state.token_usage:,}**")
 
         if len(st.session_state.messages) > 1:
-            st.download_button("📥 Unduh Laporan Chat", data=MediaUtils.buat_file_word(st.session_state.messages),
-                                file_name="Lagøs_AI_Chat.docx",
+            st.download_button("📥 Download Chat Report", data=MediaUtils.buat_file_word(st.session_state.messages),
+                                file_name="Lagos_AI_Chat.docx",
                                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                                 use_container_width=True)
 
@@ -1505,85 +1842,98 @@ def main():
             st.session_state.del_cookie = True
             st.rerun()
 
-    # ========== TAMPILAN PESAN ==========
-    for idx, message in enumerate(st.session_state.messages):
-        if message["role"] in ["system", "tool"]: continue
+    # ========== TAMPILAN PESAN (CLAUDE STYLE) ==========
+    chat_container = st.container()
+    with chat_container:
+        for idx, message in enumerate(st.session_state.messages):
+            if message["role"] in ["system", "tool"]: 
+                continue
 
-        if message["role"] == "assistant" and message.get("tool_calls"):
-            for t_call in message["tool_calls"]:
-                render_agent_chip(t_call.get("function", {}).get("name", "alat"))
-            continue
+            if message["role"] == "assistant" and message.get("tool_calls"):
+                for t_call in message["tool_calls"]:
+                    render_agent_chip(t_call.get("function", {}).get("name", "alat"))
+                continue
 
-        content = message.get("content", "")
-        if not content: continue
+            content = message.get("content", "")
+            if not content: 
+                continue
 
-        text_disp = next((item["text"] for item in content if item["type"] == "text"), "") if isinstance(content, list) else str(content)
+            text_disp = next((item["text"] for item in content if item["type"] == "text"), "") if isinstance(content, list) else str(content)
 
-        if message["role"] == "user":
-            st.markdown(f'<div class="user-bubble"><div class="inner">{html_escape(text_disp)}</div></div>', unsafe_allow_html=True)
-            continue
+            # Claude-style message rendering
+            role_class = message["role"]
+            avatar_label = "L" if message["role"] == "assistant" else "U"
+            
+            if message["role"] == "user":
+                st.markdown(f'''
+                    <div class="message-row user">
+                        <div class="message-avatar user">{avatar_label}</div>
+                        <div class="message-content user">{html_escape(text_disp)}</div>
+                    </div>
+                ''', unsafe_allow_html=True)
+            else:
+                st.markdown(f'''
+                    <div class="message-row assistant">
+                        <div class="message-avatar assistant">{avatar_label}</div>
+                        <div class="message-content assistant">{text_disp}</div>
+                    </div>
+                ''', unsafe_allow_html=True)
+                
+                # Download buttons for assistant messages
+                if message["role"] == "assistant":
+                    cols = st.columns([1, 1, 1])
+                    with cols[0]:
+                        html_code = MediaUtils.ekstrak_kode_html(text_disp)
+                        if html_code:
+                            if st.button("🚀 Web App", key=f"btn_webapp_{idx}", use_container_width=True, type="secondary"):
+                                render_webapp_modal(html_code)
 
-        with st.chat_message("assistant"):
-            st.markdown(text_disp)
+                    with cols[1]:
+                        json_ppt = MediaUtils.ekstrak_json_ppt(text_disp)
+                        if json_ppt:
+                            ppt_file = MediaUtils.buat_file_ppt(json_ppt)
+                            st.download_button("📊 PPTX", data=ppt_file,
+                                                file_name=f"{json_ppt.get('judul_presentasi', 'Presentasi')}.pptx",
+                                                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                                                key=f"btn_ppt_{idx}", use_container_width=True, type="secondary")
 
-            if message["role"] == "assistant":
-                html_code = MediaUtils.ekstrak_kode_html(text_disp)
-                if html_code:
-                    st.write("")
-                    if st.button("🚀 Tampilkan Web App", key=f"btn_webapp_{idx}", use_container_width=True):
-                        render_webapp_modal(html_code)
+                    with cols[2]:
+                        dokumen_teks = MediaUtils.ekstrak_dokumen(text_disp)
+                        if dokumen_teks:
+                            docx_file = MediaUtils.buat_dokumen_docx(dokumen_teks)
+                            st.download_button("📄 DOCX", data=docx_file, file_name="Dokumen.docx",
+                                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                                key=f"btn_docx_{idx}", use_container_width=True, type="secondary")
 
-                json_ppt = MediaUtils.ekstrak_json_ppt(text_disp)
-                if json_ppt:
-                    st.write("")
-                    ppt_file = MediaUtils.buat_file_ppt(json_ppt)
-                    st.download_button("📊 Unduh Presentasi (.PPTX)", data=ppt_file,
-                                        file_name=f"{json_ppt.get('judul_presentasi', 'Presentasi_Lagos')}.pptx",
-                                        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                                        key=f"btn_ppt_{idx}", use_container_width=True, type="primary")
+    st.markdown("<div style='height: 100px'></div>", unsafe_allow_html=True)
 
-                dokumen_teks = MediaUtils.ekstrak_dokumen(text_disp)
-                if dokumen_teks:
-                    st.write("")
-                    col_doc1, col_doc2 = st.columns(2)
-                    with col_doc1:
-                        docx_file = MediaUtils.buat_dokumen_docx(dokumen_teks)
-                        st.download_button(label="📄 Unduh (.DOCX)", data=docx_file, file_name="Dokumen_Lagos.docx",
-                                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                            key=f"btn_docx_{idx}", use_container_width=True, type="primary")
-                    with col_doc2:
-                        try:
-                            pdf_file = MediaUtils.buat_dokumen_pdf(dokumen_teks)
-                            st.download_button(label="📕 Unduh (.PDF)", data=pdf_file, file_name="Dokumen_Lagos.pdf",
-                                                mime="application/pdf", key=f"btn_pdf_{idx}",
-                                                use_container_width=True, type="primary")
-                        except Exception as e:
-                            st.error(str(e))
+    # ========== CLAUDE-STYLE INPUT AREA ==========
+    st.markdown("""
+    <div class="input-container">
+        <div class="input-wrapper">
+    """, unsafe_allow_html=True)
+    
+    uploader_idx = st.session_state.uploader_key
+    if st.session_state.get(f"img_{uploader_idx}"):
+        st.markdown(f"<div class='file-pill'>📷 Image attached</div>", unsafe_allow_html=True)
+    if st.session_state.get(f"doc_{uploader_idx}"):
+        st.markdown(f"<div class='file-pill'>📄 Document attached</div>", unsafe_allow_html=True)
 
-    st.markdown("<div style='height: 40px'></div>", unsafe_allow_html=True)
-    st.markdown("<div id='bottom-marker'></div>", unsafe_allow_html=True)
-    inject_auto_scroll()
-
-    # ========== INPUT PESAN ==========
-    with st.container():
-        uploader_idx = st.session_state.uploader_key
-        if st.session_state.get(f"img_{uploader_idx}"):
-            st.markdown(f"<div class='file-pill'>📷 Gambar telah dilampirkan</div>", unsafe_allow_html=True)
-        if st.session_state.get(f"doc_{uploader_idx}"):
-            st.markdown(f"<div class='file-pill'>📄 Dokumen telah dilampirkan</div>", unsafe_allow_html=True)
-
-        col_attach, col_input, col_mic = st.columns([1, 8, 1])
-        with col_attach:
-            with st.popover("➕"):
-                st.session_state.temp_image = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"],
-                                                                label_visibility="collapsed", key=f"img_{uploader_idx}")
-                st.session_state.temp_doc = st.file_uploader("Upload Doc", type=["pdf", "txt", "docx"],
-                                                              label_visibility="collapsed", key=f"doc_{uploader_idx}")
-        with col_input:
-            prompt_text = st.chat_input("Tanyakan sesuatu...")
-        with col_mic:
-            audio_bytes = audio_recorder(text="", recording_color="#ff4b4b", neutral_color="#888888",
-                                          icon_name="microphone", icon_size="1.8x", key=f"mic_{uploader_idx}")
+    prompt_text = st.chat_input("Ask anything...", key="main_chat_input")
+    
+    # File uploaders in popover
+    col_attach, col_mic = st.columns([1, 1])
+    with col_attach:
+        with st.popover("📎"):
+            st.session_state.temp_image = st.file_uploader("Image", type=["jpg", "png", "jpeg"],
+                                                            label_visibility="collapsed", key=f"img_{uploader_idx}")
+            st.session_state.temp_doc = st.file_uploader("Document", type=["pdf", "txt", "docx"],
+                                                          label_visibility="collapsed", key=f"doc_{uploader_idx}")
+    with col_mic:
+        audio_bytes = audio_recorder(text="", recording_color="#D97757", neutral_color="#E5E7EB",
+                                      icon_name="microphone", icon_size="1.5x", key=f"mic_{uploader_idx}")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
     prompt = prompt_text
     if audio_bytes and not prompt_text:
