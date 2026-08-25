@@ -1783,10 +1783,12 @@ def main():
         st.stop()
 
     # Get selected model name for brand bar (default before sidebar)
-    selected_model = list(MODEL_MAPPING.keys())[0]  # Default first model
-    selected_model_name = MODEL_MAPPING.get(selected_model, "Aether")
+    if "selected_model" not in st.session_state:
+        st.session_state.selected_model = list(MODEL_MAPPING.keys())[0]
+    
+    selected_model_name = MODEL_MAPPING.get(st.session_state.selected_model, "Aether")
     render_brand_bar(selected_model_name)
-
+    
     with st.sidebar:
         render_profile_card(st.session_state.username)
         st.divider()
@@ -1821,7 +1823,7 @@ def main():
 
         st.divider()
         st.markdown('<div class="side-label">AI Model</div>', unsafe_allow_html=True)
-        selected_model = st.selectbox("Select active model:", list(MODEL_MAPPING.keys()),
+        st.session_state.selected_model = st.selectbox("Select active model:", list(MODEL_MAPPING.keys()),
                                        format_func=lambda x: MODEL_MAPPING[x], label_visibility="collapsed")
 
         st.divider()
