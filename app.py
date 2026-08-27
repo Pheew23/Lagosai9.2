@@ -3,7 +3,6 @@ import sqlite3
 import hashlib
 import os
 import requests
-import markdown
 
 # --- KONFIGURASI HALAMAN & TEMA GEMINI ---
 st.set_page_config(
