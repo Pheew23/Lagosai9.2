@@ -328,7 +328,7 @@ def delete_session(session_id):
 # --- MODEL CONFIG ---
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
 MODEL_MAPPING = {
-    "Aether": "meta/llama-3.1-70b-instruct",
+    "Aether": "minimax/minimax-m3:free",
     "Nexus": "meta/llama-3.1-405b-instruct",
     "Pulse": "mistralai/mistral-large-2407",
 }
@@ -338,7 +338,7 @@ def get_ai_response(prompt, model_key, history):
         return "⚠️ Error: NVIDIA API Key tidak ditemukan."
     
     model_id = MODEL_MAPPING.get(model_key, MODEL_MAPPING["Aether"])
-    url = "https://integrate.api.nvidia.com/v1/chat/completions"
+    url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {"Authorization": f"Bearer {NVIDIA_API_KEY}", "Content-Type": "application/json"}
     
     api_messages = [{"role": msg["role"], "content": msg["content"]} for msg in history]
